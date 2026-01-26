@@ -67,27 +67,20 @@ jobs:
       - name: 使用 RunCommand 执行命令
         id: run_command
         run: |
-          command_id=$(aliyun ecs RunCommand \
+          invoke_id=$(aliyun ecs RunCommand \
             --Type "RunShellScript" \
             --CommandContent "echo HELLO_GITHUB; date" \
             --InstanceId.1 "${{ steps.get_ecs.outputs.instance_id }}" \
             --Name "github-action-test-command" \
-            | jq -r '.CommandId')
-
-          # 下发命令到实例
-          invoke_id=$(aliyun ecs InvokeCommand \
-            --CommandId $command_id \
-            --InstanceId.1 "${{ steps.get_ecs.outputs.instance_id }}" \
             | jq -r '.InvokeId')
 
-          echo "command_id=$command_id" >> $GITHUB_OUTPUT
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
 
       - name: 获取命令执行结果（轮询）
         run: |
           for i in {1..10}; do
             result=$(aliyun ecs DescribeInvocationResults \
-              --InvokeId ${{ steps.run_command.outputs.invoke_id }})
+              --InvokeId "${{ steps.run_command.outputs.invoke_id }}")
 
             status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
             output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
@@ -96,7 +89,7 @@ jobs:
             if [[ "$status" == "Finished" ]]; then
               echo "命令输出:"
               echo "$output" | base64 -d
-              aliyun ecs StopInstance \ 
+              aliyun ecs StopInstance \
               --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
               sleep 30
               aliyun ecs DeleteInstance \
