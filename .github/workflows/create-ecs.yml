@@ -89,13 +89,13 @@ jobs:
             result=$(aliyun ecs DescribeInvocationResults \
               --InvokeId ${{ steps.run_command.outputs.invoke_id }})
 
-            status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvocationStatus')
+            status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
             output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
 
             echo "当前状态: $status"
             if [[ "$status" == "Finished" ]]; then
               echo "命令输出:"
-              echo "$output"
+              echo "$output" | base64 -d
               break
             elif [[ "$status" == "Failed" ]]; then
               echo "命令执行失败"
