@@ -19,7 +19,7 @@ jobs:
       - name: Configure Aliyun CLI
         run: |
           # 1. 安装 Aliyun CLI
-          curl -sSL https://aliyuncs.github.io/aliyun-cli/install.sh | bash
+          /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
           # 2. 配置认证信息（从仓库 Secrets 读取）
           aliyun configure set \
             --profile default \
