@@ -87,7 +87,7 @@ jobs:
         run: |
           for i in {1..10}; do
             result=$(aliyun ecs DescribeInvocationResults \
-              --InvokeId ${{ steps.run_command.outputs.invoke_id }})
+              --InvokeId "${{ steps.run_command.outputs.invoke_id }}")
 
             status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
             output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
@@ -96,12 +96,12 @@ jobs:
             if [[ "$status" == "Finished" ]]; then
               echo "命令输出:"
               echo "$output" | base64 -d
-              aliyun ecs StopInstance \ 
-              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
+              $(aliyun ecs StopInstance \ 
+              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" )
               sleep 30
-              aliyun ecs DeleteInstance \
+              $(aliyun ecs DeleteInstance \
               --Force true \
-              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
+              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" )
               break
             elif [[ "$status" == "Failed" ]]; then
               echo "命令执行失败"
