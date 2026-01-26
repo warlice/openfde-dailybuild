@@ -90,11 +90,11 @@ jobs:
               echo "命令输出:"
               echo "$output" | base64 -d
               $(aliyun ecs StopInstance \ 
-              --InstanceId "${{ steps.run_command.outputs.instance_id }}" )
+              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" )
               sleep 30
               $(aliyun ecs DeleteInstance \
               --Force true \
-              --InstanceId "${{ steps.run_command.outputs.instance_id }}" )
+              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" )
               break
             elif [[ "$status" == "Failed" ]]; then
               echo "命令执行失败"
