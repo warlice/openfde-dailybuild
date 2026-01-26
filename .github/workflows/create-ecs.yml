@@ -45,7 +45,7 @@ jobs:
             --SystemDisk.PerformanceLevel PL1 \
             --Password ${{ secrets.ALIYUN_INSTANCE_PSSSWD }} \
             --InternetChargeType PayByTraffic \
-            --InternetMaxBandwidthOut 5  # 分配5Mbps带宽，会获得一个公网IP \
+            --InternetMaxBandwidthOut 5 \
             --Amount 1 |jq -r .InstanceIdSets.InstanceIdSet[0])
 
           echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
