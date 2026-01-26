@@ -7,14 +7,18 @@ name: Scheduled ECS Creation
     #- cron: '0 0 * * *'
   # 允许在 GitHub 页面上手动触发此工作流
   #workflow_dispatch:
-
+  #
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
+  workflow_dispatch:
+
+
 
 jobs:
   create-ecs:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'   # 只在push时运行
     steps:
       - name: Configure Aliyun CLI
         run: |
@@ -31,8 +35,72 @@ jobs:
         run: |
           aliyun ecs RunInstances \
             --RegionId ${{ secrets.ALIYUN_REGION }} \
-            --InstanceType ecs.g6.large \
+            --InstanceType ${{secrets.ALIYUN_INSTANCE_TYPE }} \
             --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd \
             --SecurityGroupId ${{ secrets.ALIYUN_SECURITY_GROUP_ID }} \
             --VSwitchId ${{ secrets.ALIYUN_VSWITCH_ID }} \
+            --SystemDisk.Category cloud_essd \
             --Amount 1
+
+  monitor-ecs_task:
+    name: monitor whether the compile progress is still running
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'   # 只在手动触发时运行
+    steps:
+      - run: | 
+          # 1. 安装 Aliyun CLI
+          /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
+          # 2. 配置认证信息（从仓库 Secrets 读取）
+          aliyun configure set \
+            --profile default \
+            --region ${{ secrets.ALIYUN_REGION }} \
+            --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
+            --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+      - name: 查询 ECS 实例ID
+        id: get_ecs
+        run: |
+          instance_id=$(aliyun ecs DescribeInstances \
+            --PageSize 1 \
+            --Output json | jq -r '.Instances.Instance[0].InstanceId')
+          echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
+
+      - name: 使用 RunCommand 执行命令
+        id: run_command
+        run: |
+          command_id=$(aliyun ecs RunCommand \
+            --Type "RunShellScript" \
+            --CommandContent "echo HELLO_GITHUB; date" \
+            --Name "github-action-test-command" \
+            --Output json | jq -r '.CommandId')
+
+          # 下发命令到实例
+          invoke_id=$(aliyun ecs InvokeCommand \
+            --RegionId cn-hangzhou \
+            --CommandId $command_id \
+            --InstanceIds "[\"${{ steps.get_ecs.outputs.instance_id }}\"]" \
+            --Output json | jq -r '.InvokeId')
+
+          echo "command_id=$command_id" >> $GITHUB_OUTPUT
+          echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
+
+      - name: 获取命令执行结果（轮询）
+        run: |
+          for i in {1..10}; do
+            result=$(aliyun ecs DescribeInvocationResults \
+              --InvokeId ${{ steps.run_command.outputs.invoke_id }} \
+              --Output json)
+
+            status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvocationStatus')
+            output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
+
+            echo "当前状态: $status"
+            if [[ "$status" == "Finished" ]]; then
+              echo "命令输出:"
+              echo "$output"
+              break
+            elif [[ "$status" == "Failed" ]]; then
+              echo "命令执行失败"
+              exit 1
+            fi
+            sleep 10
+          done
