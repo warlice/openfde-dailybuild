@@ -31,8 +31,11 @@ jobs:
         run: |
           aliyun ecs RunInstances \
             --RegionId ${{ secrets.ALIYUN_REGION }} \
-            --InstanceType ecs.g6.large \
+            --InstanceType ${{secrets.ALIYUN_INSTANCE_TYPE }} \
             --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd \
             --SecurityGroupId ${{ secrets.ALIYUN_SECURITY_GROUP_ID }} \
             --VSwitchId ${{ secrets.ALIYUN_VSWITCH_ID }} \
+            --SystemDisk.Category cloud_essd \
             --Amount 1
+
+
