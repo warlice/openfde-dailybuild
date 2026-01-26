@@ -32,15 +32,30 @@ jobs:
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
       - name: Create ECS Instance
+        id: create_ecs
         run: |
-          aliyun ecs RunInstances \
+          instance_id=$(aliyun ecs RunInstances \
             --RegionId ${{ secrets.ALIYUN_REGION }} \
             --InstanceType ${{secrets.ALIYUN_INSTANCE_TYPE }} \
             --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd \
             --SecurityGroupId ${{ secrets.ALIYUN_SECURITY_GROUP_ID }} \
             --VSwitchId ${{ secrets.ALIYUN_VSWITCH_ID }} \
             --SystemDisk.Category cloud_essd \
-            --Amount 1
+            --SystemDisk.Size 350 \
+            --SystemDisk.PerformanceLevel PL1 \
+            --Password ${{ secrets.ALIYUN_INSTANCE_PSSSWD }} \
+            --Amount 1 |jq -r .InstanceIdSets.InstanceIdSet[0])
+
+          echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
+
+      - name: clone this repo to execute making scripts
+        run: |
+          SCRIPT_CONTENT="#!/bin/bash \n apt update \n apt install git -y \n git clone https://github.com/warlice/openfde-dailybuild \n ./openfde-dailybuild/make.sh" 
+          BASE64_SCRIPT=$(echo "$SCRIPT_CONTENT" | base64 -w 0)
+
+          aliyun ecs RunCommand \
+          --InstanceId.1 "${{ steps.create_ecs.outputs.instance_id }}" \
+          --CommandContent "echo '$BASE64_SCRIPT' | base64 -d > /root/script.sh && bash /root/script.sh"
 
   monitor-ecs_task:
     name: monitor whether the compile progress is still running
