@@ -61,7 +61,7 @@ jobs:
         run: |
           instance_id=$(aliyun ecs DescribeInstances \
             --PageSize 1 \
-            --Output json | jq -r '.Instances.Instance[0].InstanceId')
+            | jq -r '.Instances.Instance[0].InstanceId')
           echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
 
       - name: 使用 RunCommand 执行命令
@@ -71,14 +71,13 @@ jobs:
             --Type "RunShellScript" \
             --CommandContent "echo HELLO_GITHUB; date" \
             --Name "github-action-test-command" \
-            --Output json | jq -r '.CommandId')
+            | jq -r '.CommandId')
 
           # 下发命令到实例
           invoke_id=$(aliyun ecs InvokeCommand \
-            --RegionId cn-hangzhou \
             --CommandId $command_id \
             --InstanceIds "[\"${{ steps.get_ecs.outputs.instance_id }}\"]" \
-            --Output json | jq -r '.InvokeId')
+            | jq -r '.InvokeId')
 
           echo "command_id=$command_id" >> $GITHUB_OUTPUT
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
@@ -87,8 +86,7 @@ jobs:
         run: |
           for i in {1..10}; do
             result=$(aliyun ecs DescribeInvocationResults \
-              --InvokeId ${{ steps.run_command.outputs.invoke_id }} \
-              --Output json)
+              --InvokeId ${{ steps.run_command.outputs.invoke_id }})
 
             status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvocationStatus')
             output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
