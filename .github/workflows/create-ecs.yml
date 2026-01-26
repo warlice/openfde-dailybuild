@@ -89,7 +89,7 @@ jobs:
             if [[ "$status" == "Finished" ]]; then
               echo "命令输出:"
               echo "$output" | base64 -d
-              aliyun ecs StopInstance \ 
+              aliyun ecs StopInstance \
               --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
               sleep 30
               aliyun ecs DeleteInstance \
