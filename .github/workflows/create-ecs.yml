@@ -54,6 +54,8 @@ jobs:
           BASE64_SCRIPT=$(echo "$SCRIPT_CONTENT" | base64 -w 0)
 
           aliyun ecs RunCommand \
+          --Name "exec_script" \
+          --Type "RunShellScript" \
           --InstanceId.1 "${{ steps.create_ecs.outputs.instance_id }}" \
           --CommandContent "echo '$BASE64_SCRIPT' | base64 -d > /root/script.sh && bash /root/script.sh"
 
