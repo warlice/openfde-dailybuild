@@ -70,6 +70,7 @@ jobs:
           command_id=$(aliyun ecs RunCommand \
             --Type "RunShellScript" \
             --CommandContent "echo HELLO_GITHUB; date" \
+            --InstanceIds "[\"${{ steps.get_ecs.outputs.instance_id }}\"]" \
             --Name "github-action-test-command" \
             | jq -r '.CommandId')
 
