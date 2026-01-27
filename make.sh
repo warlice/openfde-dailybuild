@@ -15,3 +15,7 @@ repo init -u https://github.com/openfde/fde-manifests -b fde_14
 cp /root/aosp/.repo/repo/repo /usr/bin/repo
 repo init -u https://github.com/openfde/fde-manifests -b fde_14  --git-lfs
 repo sync -j20
+source build/envsetup.sh
+syncFdeAPK
+breakfast fde_x100_arm64 user
+make -j24
