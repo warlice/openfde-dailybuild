@@ -9,8 +9,8 @@ name: Scheduled ECS Creation
   #workflow_dispatch:
   #
 on:
-  push:
-    branches: [master]
+  #push:
+    #branches: [master]
   workflow_dispatch:
 
 
@@ -27,7 +27,7 @@ jobs:
           # 2. 配置认证信息（从仓库 Secrets 读取）
           aliyun configure set \
             --profile default \
-            --region ${{ secrets.ALIYUN_REGION }} \
+            --region ${{ vars.ALIYUN_REGION }} \
             --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
@@ -35,8 +35,8 @@ jobs:
         id: create_ecs
         run: |
           instance_id=$(aliyun ecs RunInstances \
-            --RegionId ${{ secrets.ALIYUN_REGION }} \
-            --InstanceType ${{secrets.ALIYUN_INSTANCE_TYPE }} \
+            --RegionId ${{ vars.ALIYUN_REGION }} \
+            --InstanceType ${{vars.ALIYUN_INSTANCE_TYPE }} \
             --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd \
             --SecurityGroupId ${{ secrets.ALIYUN_SECURITY_GROUP_ID }} \
             --VSwitchId ${{ secrets.ALIYUN_VSWITCH_ID }} \
@@ -45,7 +45,7 @@ jobs:
             --SystemDisk.PerformanceLevel PL1 \
             --Password ${{ secrets.ALIYUN_INSTANCE_PSSSWD }} \
             --InternetChargeType PayByTraffic \
-            --InternetMaxBandwidthOut 5 \
+            --InternetMaxBandwidthOut 50 \
             --Amount 1 |jq -r .InstanceIdSets.InstanceIdSet[0])
 
           if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
