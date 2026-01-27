@@ -52,7 +52,7 @@ jobs:
 
       - name: clone this repo to execute making scripts
         run: |
-          SCRIPT_CONTENT="#!/bin/bash \n apt update \n apt install git -y \n git clone https://github.com/warlice/openfde-dailybuild \n ./openfde-dailybuild/make.sh" 
+          SCRIPT_CONTENT=$(cat start.sh)
           BASE64_SCRIPT=$(echo "$SCRIPT_CONTENT" | base64 -w 0)
 
           aliyun ecs RunCommand \
