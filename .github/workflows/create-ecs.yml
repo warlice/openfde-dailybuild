@@ -48,7 +48,13 @@ jobs:
             --InternetMaxBandwidthOut 5 \
             --Amount 1 |jq -r .InstanceIdSets.InstanceIdSet[0])
 
+          if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
+            echo "ECS 实例创建失败，退出后续步骤。"
+            exit 0
+          fi
+
           echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
+          sleep 60  # 等待实例启动
 
       - name: clone this repo to execute making scripts
         run: |
@@ -81,6 +87,11 @@ jobs:
           instance_id=$(aliyun ecs DescribeInstances \
             --PageSize 1 \
             | jq -r '.Instances.Instance[0].InstanceId')
+
+          if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
+            echo "未获取到 ECS 实例ID，退出。"
+            exit 0
+          fi
           echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
 
       - name: 使用 RunCommand 执行命令
@@ -88,7 +99,7 @@ jobs:
         run: |
           invoke_id=$(aliyun ecs RunCommand \
             --Type "RunShellScript" \
-            --CommandContent "echo HELLO_GITHUB; date" \
+            --CommandContent "ps -ef |grep -w "/root/script.sh" |grep -v grep " \
             --InstanceId.1 "${{ steps.get_ecs.outputs.instance_id }}" \
             --Name "github-action-test-command" \
             | jq -r '.InvokeId')
@@ -103,18 +114,31 @@ jobs:
 
             status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
             output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
+            invocationStatus=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvocationStatus')
 
             echo "当前状态: $status"
             if [[ "$status" == "Finished" ]]; then
-              echo "命令输出:"
-              echo "$output" | base64 -d
-              aliyun ecs StopInstance \
-              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
-              sleep 30
-              aliyun ecs DeleteInstance \
-              --Force true \
-              --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
-              break
+              if [[ "$invocationStatus" == "Success" ]]; then
+                echo "命令执行成功"
+                echo 
+                echo "命令输出:"
+                echo "$output" |base64 -d 
+                echo "$output" | base64 -d |grep "/root/script.sh" -w 
+                if [[ $? -eq 0 ]]; then
+                  echo "编译任务仍在运行中。"
+                else
+                  echo "编译任务已完成。"
+                  aliyun ecs StopInstance \
+                  --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
+                  sleep 60
+                  aliyun ecs DeleteInstance \
+                  --Force true \
+                  --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
+                  break
+                  else
+                    echo "命令执行失败，状态: $invocationStatus"
+                  fi
+                fi
             elif [[ "$status" == "Failed" ]]; then
               echo "命令执行失败"
               exit 1
