@@ -7,5 +7,5 @@ NEEDRESTART_SUSPEND=1 apt install curl repo wget git-lfs -y
 ln -sf /usr/bin/python3 /usr/bin/python
 git config --global user.name openfde && git config --global user.email openfde@openfde.com
 git config --file /root/.gitconfig --includes --replace-all color.ui auto
-repo init -u https://github.com/openfde/fde-manifests -b fde_14 --git-lfs
+repo init -u https://github.com/openfde/fde-manifests -b fde_14 -git-lfs
 repo sync -j4
