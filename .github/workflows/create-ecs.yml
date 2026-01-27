@@ -50,7 +50,7 @@ jobs:
 
           if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
             echo "ECS 实例创建失败，退出后续步骤。"
-            exit 0
+            exit 1
           fi
 
           echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
@@ -90,7 +90,7 @@ jobs:
 
           if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
             echo "未获取到 ECS 实例ID，退出。"
-            exit 0
+            exit 1
           fi
           echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
 
