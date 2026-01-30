@@ -35,7 +35,7 @@ jobs:
          invoke_id=$(aliyun ecs RunCommand \
           --Name "exec_aosp_build_script" \
           --Type "RunShellScript" \
-          --InstanceId.1 ${{ secrets.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
+          --InstanceId.1 ${{ vars.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
           --CommandContent "bash /root/script.sh daily" |jq -r '.InvokeId')
 
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
