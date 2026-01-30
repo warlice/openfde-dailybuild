@@ -38,6 +38,7 @@ jobs:
           --InstanceId.1 ${{ vars.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
           --CommandContent "bash /root/1start_aosp_build.sh daily" |jq -r '.InvokeId')
 
+          echo "invoke_id=$invoke_id" 
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
 
       - name: 获取命令执行结果（轮询）
