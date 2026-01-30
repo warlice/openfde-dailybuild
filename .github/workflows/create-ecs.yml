@@ -57,7 +57,7 @@ jobs:
                 echo 
                 echo "命令输出:"
                 echo "$output" | base64 -d 
-	      fi
+              fi
             fi
             sleep 10
           done
