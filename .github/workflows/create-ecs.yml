@@ -55,12 +55,13 @@ jobs:
 
             echo "当前状态: $status"
             if [[ "$status" == "Finished" ]]; then
-              if [[ "$invocationStatus" == "Success" ]]; then
-                echo "命令执行成功"
-                echo 
-                echo "命令输出:"
-                echo "$output" | base64 -d 
-              fi
+              echo "命令执行完毕"
+              echo "invocation status"
+              echo "$invocationStatus"
+              echo
+              echo "命令输出:"
+              echo "$output" | base64 -d
+              break
             fi
             sleep 15
           done
