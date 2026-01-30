@@ -1,4 +1,4 @@
-name: Scheduled ECS Creation
+name: start aosp build task
 
 #on:
   #schedule:
