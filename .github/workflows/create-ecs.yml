@@ -37,7 +37,7 @@ jobs:
           --Type "RunShellScript" \
           --InstanceId.1 ${{ secrets.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
           --CommandContent "bash /root/script.sh daily" \
-	| jq -r '.InvokeId')
+	  | jq -r '.InvokeId')
 
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
 
