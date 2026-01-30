@@ -36,6 +36,7 @@ jobs:
          invoke_id=$(aliyun ecs RunCommand \
           --Name "exec_aosp_build_script" \
           --Type "RunShellScript" \
+          --Timeout 300 \
           --InstanceId.1 ${{ vars.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
           --CommandContent "bash /root/1start_aosp_build.sh daily" |jq -r '.InvokeId')
 
