@@ -16,9 +16,8 @@ on:
 
 
 jobs:
-  create-ecs:
+  start_aosp_build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'   # 只在push时运行
     steps:
       - name: Configure Aliyun CLI
         run: |
@@ -31,78 +30,14 @@ jobs:
             --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
-      - name: Create ECS Instance
-        id: create_ecs
+      - name: execute_start_aosp_build
         run: |
-          instance_id=$(aliyun ecs RunInstances \
-            --RegionId ${{ vars.ALIYUN_REGION }} \
-            --InstanceType ${{vars.ALIYUN_INSTANCE_TYPE }} \
-            --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd \
-            --SecurityGroupId ${{ secrets.ALIYUN_SECURITY_GROUP_ID }} \
-            --VSwitchId ${{ secrets.ALIYUN_VSWITCH_ID }} \
-            --SystemDisk.Category cloud_essd \
-            --SystemDisk.Size 350 \
-            --SystemDisk.PerformanceLevel PL1 \
-            --Password ${{ secrets.ALIYUN_INSTANCE_PSSSWD }} \
-            --InternetChargeType PayByTraffic \
-            --InternetMaxBandwidthOut 50 \
-            --Amount 1 |jq -r .InstanceIdSets.InstanceIdSet[0])
-
-          if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
-            echo "ECS 实例创建失败，退出后续步骤。"
-            exit 1
-          fi
-
-          echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
-          sleep 60  # 等待实例启动
-
-      - name: clone this repo to execute making scripts
-        run: |
-          SCRIPT_CONTENT="apt -y install git &&  git clone https://github.com/warlice/openfde-dailybuild && bash openfde-dailybuild/make.sh"
-          BASE64_SCRIPT=$(echo "$SCRIPT_CONTENT" | base64 -w 0)
-
-          aliyun ecs RunCommand \
-          --Name "exec_script" \
+         invoke_id=$(aliyun ecs RunCommand \
+          --Name "exec_aosp_build_script" \
           --Type "RunShellScript" \
-          --InstanceId.1 "${{ steps.create_ecs.outputs.instance_id }}" \
-          --CommandContent "echo '$BASE64_SCRIPT' | base64 -d > /root/script.sh && bash /root/script.sh"
-
-  monitor-ecs_task:
-    name: monitor whether the compile progress is still running
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'   # 只在手动触发时运行
-    steps:
-      - run: | 
-          # 1. 安装 Aliyun CLI
-          /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
-          # 2. 配置认证信息（从仓库 Secrets 读取）
-          aliyun configure set \
-            --profile default \
-            --region ${{ secrets.ALIYUN_REGION }} \
-            --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
-            --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
-      - name: 查询 ECS 实例ID
-        id: get_ecs
-        run: |
-          instance_id=$(aliyun ecs DescribeInstances \
-            --PageSize 1 \
-            | jq -r '.Instances.Instance[0].InstanceId')
-
-          if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
-            echo "未获取到 ECS 实例ID，退出。"
-            exit 1
-          fi
-          echo "instance_id=$instance_id" >> $GITHUB_OUTPUT
-
-      - name: 使用 RunCommand 执行命令
-        id: run_command
-        run: |
-          invoke_id=$(aliyun ecs RunCommand \
-            --Type "RunShellScript" \
-            --CommandContent "ps -ef |grep -w "/root/script.sh" |grep -v grep " \
-            --InstanceId.1 "${{ steps.get_ecs.outputs.instance_id }}" \
-            --Name "github-action-test-command" \
-            | jq -r '.InvokeId')
+          --InstanceId.1 ${{ secrets.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
+          --CommandContent "bash /root/script.sh daily" \
+	| jq -r '.InvokeId')
 
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
 
@@ -110,7 +45,7 @@ jobs:
         run: |
           for i in {1..10}; do
             result=$(aliyun ecs DescribeInvocationResults \
-              --InvokeId "${{ steps.run_command.outputs.invoke_id }}")
+              --InvokeId "${{ steps.execute_start_aosp_build.outputs.invoke_id }}")
 
             status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
             output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
@@ -122,26 +57,7 @@ jobs:
                 echo "命令执行成功"
                 echo 
                 echo "命令输出:"
-                echo "$output" | base64 -d |grep "/root/script.sh" -w 
-                if [[ $? -eq 0 ]]; then
-                  echo "编译任务仍在运行中。"
-                  exit 0
-                else
-                  echo "编译任务已完成。"
-                  aliyun ecs StopInstance \
-                  --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
-                  sleep 60
-                  aliyun ecs DeleteInstance \
-                  --Force true \
-                  --InstanceId "${{ steps.get_ecs.outputs.instance_id }}" 
-                  exit 0
-                fi
-              else
-                echo "命令执行失败，状态: $invocationStatus"
-              fi
-            elif [[ "$status" == "Failed" ]]; then
-              echo "命令执行失败"
-              exit 1
+                echo "$output" | base64 -d 
             fi
             sleep 10
           done
