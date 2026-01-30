@@ -1,0 +1,96 @@
+name: manual build debs task
+
+on:
+  #push:
+    #branches: [master]
+  workflow_dispatch:
+
+    # 定义输入参数
+    inputs:
+      version:
+        description: '版本号'
+        required: true
+        default: '1.0.0'
+        type: string
+      
+      aosp_base_ver:
+        description: 'aosp ver'
+        required: true
+        type: choice
+        default: '14'
+        options:
+        - 14
+        - 11
+        
+      arch:
+        description: 'cpu arch'
+        required: true
+        default: arm64
+        type: choice
+        options:
+        - arm64
+        - x86
+        - arm64only
+
+      num:
+        description: '版本序号，用于1天内的多个版本'
+        required: true
+        default: '1'
+        type: string
+
+jobs:
+  start_aosp_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure Aliyun CLI
+        run: |
+          # 1. 安装 Aliyun CLI
+          /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
+          # 2. 配置认证信息（从仓库 Secrets 读取）
+          aliyun configure set \
+            --profile default \
+            --region ${{ vars.ALIYUN_REGION }} \
+            --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
+            --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+
+      - name: start_aosp_build
+        id: start_aosp_build
+        run: |
+         invoke_id=$(aliyun ecs RunCommand \
+          --Name "exec_aosp_build_script" \
+          --Type "RunShellScript" \
+          --Timeout 300 \
+          --InstanceId.1 ${{ vars.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
+          --CommandContent "bash /root/1start_aosp_build.sh version \
+          ${{ github.event.inputs.version }} ${{ github.event.inputs.aosp_base_ver }} \
+          ${{ github.event.inputs.arch }} ${{ github.event.inputs.num }}" |jq -r '.InvokeId')
+
+          echo "invoke_id=$invoke_id" 
+          echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
+
+      - name: 获取命令执行结果（轮询）
+        run: |
+          sleep 60
+          for i in {1..16}; do
+            result=$(aliyun ecs DescribeInvocationResults \
+              --InvokeId "${{ steps.start_aosp_build.outputs.invoke_id }}")
+
+            status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
+            output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
+            invocationStatus=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvocationStatus')
+
+            echo "当前状态: $status"
+            if [[ "$status" == "Finished" ]]; then
+              echo "命令执行完毕"
+              echo "invocation status"
+              echo "$invocationStatus"
+              echo
+              echo "命令输出:"
+              echo "$output" | base64 -d
+              break
+            fi
+            sleep 15
+          done
+
+
+          
