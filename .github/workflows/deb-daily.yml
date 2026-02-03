@@ -56,7 +56,7 @@ jobs:
           --Type "RunShellScript" \
           --Timeout 300 \
           --InstanceId.1 ${{ vars.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
-          --CommandContent "nohup bash /root/call_start_deb_task.sh version \
+          --CommandContent "nohup bash /root/call_start_deb_task.sh daily \
           $(date +"%Y%m%d%H")  ${{ github.event.inputs.aosp_base_ver }} \
           ${{ github.event.inputs.arch }} ${{ github.event.inputs.num }} 1>/dev/null 2>&1 " |jq -r '.InvokeId')
 
