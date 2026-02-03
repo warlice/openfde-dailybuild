@@ -1,4 +1,4 @@
-name: manual build imgs and debs task
+name: manual build only debs daily task
 
 on:
   #push:
@@ -7,11 +7,6 @@ on:
 
     # 定义输入参数
     inputs:
-      version:
-        description: '版本号'
-        required: true
-        default: '1.0.0'
-        type: string
       
       aosp_base_ver:
         description: 'aosp ver'
@@ -39,7 +34,7 @@ on:
         type: string
 
 jobs:
-  start_aosp_build:
+  start_deb_build:
     runs-on: ubuntu-latest
     steps:
       - name: Configure Aliyun CLI
@@ -53,19 +48,18 @@ jobs:
             --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
 
-      - name: start_aosp_build
-        id: start_aosp_build
+      - name: call deb build task for daily
+        id: call_deb_build
         run: |
          invoke_id=$(aliyun ecs RunCommand \
-          --Name "exec_aosp_build_script" \
+          --Name "exec_call_deb_build" \
           --Type "RunShellScript" \
           --Timeout 300 \
           --InstanceId.1 ${{ vars.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
-          --CommandContent "bash /root/1start_aosp_build.sh version \
-          ${{ github.event.inputs.version }} ${{ github.event.inputs.aosp_base_ver }} \
-          ${{ github.event.inputs.arch }} ${{ github.event.inputs.num }}" |jq -r '.InvokeId')
+          --CommandContent "nohup bash /root/call_start_deb_task.sh version \
+          $(date +"%Y%m%d%H")  ${{ github.event.inputs.aosp_base_ver }} \
+          ${{ github.event.inputs.arch }} ${{ github.event.inputs.num }} 1>/dev/null 2>&1 " |jq -r '.InvokeId')
 
-          echo "invoke_id=$invoke_id" 
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
 
       - name: 获取命令执行结果（轮询）
@@ -73,7 +67,7 @@ jobs:
           sleep 60
           for i in {1..16}; do
             result=$(aliyun ecs DescribeInvocationResults \
-              --InvokeId "${{ steps.start_aosp_build.outputs.invoke_id }}")
+              --InvokeId "${{ steps.call_deb_build.outputs.invoke_id }}")
 
             status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
             output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
