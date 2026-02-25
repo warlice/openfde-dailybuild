@@ -1,4 +1,4 @@
-name: manual build only debs version task
+name: build only testing debs manually
 
 on:
   #push:

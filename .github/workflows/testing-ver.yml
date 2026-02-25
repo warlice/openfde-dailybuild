@@ -1,4 +1,4 @@
-name: manual build imgs and debs task
+name: build testing imgs and debs manually
 
 on:
   #push:
