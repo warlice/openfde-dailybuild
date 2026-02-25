@@ -6,12 +6,8 @@ on:
     # 注意：GitHub Actions 使用 UTC 时间，请根据你的时区调整
     - cron: '0 0 * * *'
   # 允许在 GitHub 页面上手动触发此工作流
-  #workflow_dispatch:
-  #
-on:
-  #push:
-    #branches: [master]
   workflow_dispatch:
+  #
 
 
 jobs:
