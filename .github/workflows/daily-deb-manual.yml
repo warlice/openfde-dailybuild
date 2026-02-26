@@ -1,4 +1,4 @@
-name: manual build only debs daily task
+name: build only debs daily task manually
 
 on:
   #push:
