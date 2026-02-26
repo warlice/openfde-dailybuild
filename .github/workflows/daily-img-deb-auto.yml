@@ -2,9 +2,9 @@ name: build img and deb automaticly daily
 
 on:
   schedule:
-    # 使用 cron 语法设置定时，此处为每天 UTC 时间 00:00 运行
+    # 使用 cron 语法设置定时，此处为每天 UTC 时间 16:00 运行
     # 注意：GitHub Actions 使用 UTC 时间，请根据你的时区调整
-    - cron: '0 0 * * *'
+    - cron: '0 16 * * *'
   # 允许在 GitHub 页面上手动触发此工作流
   workflow_dispatch:
   #
