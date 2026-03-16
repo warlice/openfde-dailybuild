@@ -45,7 +45,7 @@ function w_log()
 w_log $@
 aliyun configure switch --profile hangzhou 1>/dev/null 2>&1
 #instance_id="i-bp1coul0juc60q4dbfbb"
-instance_id=`aliyun ecs RunInstances --InstanceType ecs.c8y.2xlarge --ImageId ubuntu_22_04_arm64_20G_alibase_20251226.vhd  --SecurityGroupId sg-bp1ggu0oqgiskum7x0tw  --SystemDisk.Category cloud_essd  --SystemDisk.Size 100 --InternetChargeType PayByTraffic --InternetMaxBandwidthOut 100  --Amount 1 --RegionId cn-hangzhou --InstanceName openfde_deb_make --VSwitchId vsw-bp1pxfruajkwnoap48rtp |jq -r .InstanceIdSets.InstanceIdSet[0] `
+instance_id=`aliyun ecs RunInstances --InstanceType ecs.c8y.2xlarge --ImageId ubuntu_22_04_arm64_20G_alibase_20251226.vhd  --SecurityGroupId sg-bp1ggu0oqgiskum7x0tw  --SystemDisk.Category cloud_essd  --SystemDisk.Size 100 --Password Working+2026deb_make --InternetChargeType PayByTraffic --InternetMaxBandwidthOut 100  --Amount 1 --RegionId cn-hangzhou --InstanceName openfde_deb_make --VSwitchId vsw-bp1pxfruajkwnoap48rtp |jq -r .InstanceIdSets.InstanceIdSet[0] `
 if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
 	w_log "failed: ecs create failed"
 	exit 1

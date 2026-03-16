@@ -21,11 +21,15 @@ osspath="oss://fde-ci/daily-images/img.tgz"
 if  [ "$1" = "daily" ];then
 	ver=`date "+%y%m%d%H"`
 	basever="14"
+	ARCH="arm64"
+	VERNum="1"
 else
 	mode="testing"
 	osspath="oss://fde-ci/openfde-images/img.tgz"
 	ver=$2
 	basever=$3
+	ARCH=$4
+	VERNum=$5
 fi
 
 function clearWork() {
@@ -73,6 +77,8 @@ function buildPublishClear() {
 	log "update run in docker make deb" 
 	sed -i "/aospver/s/version/$ver/" works/$dockerScript
 	sed -i "/aospver/s/aospver/$basever/" works/$dockerScript
+	sed -i "s/verNum/$VERNum/" works/$dockerScript
+	sed -i "s/arch/$ARCH/" works/$dockerScript
 	cp -a /root/img.tgz works/
 	cd works
 	log "build image $newimg" 
@@ -117,51 +123,60 @@ if [ $? != 0 ];then
 fi
 aliyun configure switch --profile default
 set -e
-DEBIP="172.30.248.58"
 OSSBUCKET=http://openfde.oss-cn-hangzhou-internal.aliyuncs.com/system_images
 
-#****************make deb for ubuntu 24************************#
-log "step 4: wget ubuntu 24.04 image" 
-IMG="ubuntu_24.04_installed.img"
-wget $OSSBUCKET/$IMG 1>/dev/null 2>&1
-log "step 4: load ubuntu 24.04" 
-docker load -i $IMG  1>/dev/null 2>&1
-rm -rf $IMG
+imgFileList="ubuntu_24.04_installed.img ubuntu_22.04_installed.img deepin_beige.img"
+imgNameList="ubuntu:24.04_installed ubuntu:22.04_installed deepin:beige_work"
+newimgList="ubuntu:24_work_img ubuntu:22_work_img deepin:beige_work_img"
+containerList="ubuntu_24_work ubuntu_22_work deepin_beige_work"
+versionList="noble jammy beige"
 
-buildPublishClear "ubuntu:24.04_installed"  "ubuntu:24_work_img" ubuntu_24_work noble
+# transfer to arrays
+IMGFILES=($imgFileList)
+IMGS=($imgNameList)
+NEW_IMGS=($newimgList)
+CONTAINERS=($containerList)
+VERSIONS=($versionList)
 
-#****************make deb for ubuntu 22************************#
-log "step 5: wget ubuntu 22.04 image" 
-IMG="ubuntu_22.04_installed.img"
-wget $OSSBUCKET/$IMG 1>/dev/null 2>&1
-log "step 5: load ubuntu 22.04" 
-docker load -i $IMG
-rm -rf $IMG
+for i in "${!IMGS[@]}"; do
+	IMGFILE="${IMGFILES[$i]}"
+	IMG="${IMGS[$i]}"
+	NEW_IMG="${NEW_IMGS[$i]}"
+	CONTAINER="${CONTAINERS[$i]}"
+	VERSION="${VERSIONS[$i]}"
+	log "wget $IMGFILE" 
+	wget $OSSBUCKET/$IMGFILE 1>/dev/null 2>&1
 
-buildPublishClear "ubuntu:22.04_installed"  "ubuntu:22_work_img" ubuntu_22_work jammy
+	log "load $IMGFILE"
+	docker load -i $IMGFILE 1>/dev/null 2>&1
+	rm -rf $IMGFILE
+
+	buildPublishClear $IMG "$NEW_IMG" "$CONTAINER" "$VERSION"
+done
 
 #****************make deb for kylin************************#
-log "step 6: wget kylin v10 image" 
+log "wget kylin v10 image" 
 IMGTGZ="kylin_v10sp1.img.tgz"
 wget $OSSBUCKET/$IMGTGZ 1>/dev/null 2>&1
 tar -xf $IMGTGZ
 rm -rf $IMGTGZ
 IMG="kylin_v10sp1.img"
-log "step 6: load kylin v10 image" 
+log "load kylin v10 image" 
 docker load -i $IMG
 rm -rf $IMG
 
 buildPublishClear "kylin:v10sp1"  "kylin:v10sp1_work_img" kylin_v10sp1_work kylin
 
 #****************make deb for uos************************#
-log "step 7: wget uos v20 image" 
+log "wget uos v20 image" 
 IMGTGZ="uos_v20.img.tgz"
 wget $OSSBUCKET/$IMGTGZ 1>/dev/null 2>&1
 tar -xf $IMGTGZ
 rm -rf $IMGTGZ
 IMG="uos.img"
-log "step 7: load uos v20 image" 
+log "load uos v20 image" 
 docker load -i $IMG
 rm -rf $IMG
 
 buildPublishClear "uos:v20_installed"  "uos:v20_work_img" uos_v20_work uos
+
