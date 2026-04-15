@@ -53,10 +53,10 @@ cd aosp
 git config --file /root/.gitconfig --includes --replace-all color.ui auto
 
 log "step 4: repo init " 
-repo init -u https://github.com/openfde/fde-manifests -b fde_14  
+repo init -u https://github.com/openfde/fde-manifests -b fde_14 --depth=1
 cp /root/aosp/.repo/repo/repo /usr/bin/repo
 log "step 5: repo init --git-lfs "
-repo init -u https://github.com/openfde/fde-manifests -b fde_14  --git-lfs
+repo init -u https://github.com/openfde/fde-manifests -b fde_14 --depth=1  --git-lfs
 set +e
 log  "step 6: repo sync 28 first " 
 repo sync -j28
