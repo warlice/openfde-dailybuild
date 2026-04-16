@@ -1,9 +1,10 @@
 #!/bin/bash
 
 
+LOGPATH=/root/make_imgs.log
 function log(){
   s=`date "+%y%m%d_%H%M%S:"`
-  echo  "$s $1" >> /root/make_imgs.log
+  echo  "$s $1" >> $LOGPATH
 }
 
 
@@ -48,6 +49,17 @@ if [ ! -e "/root/aosp" ];then
 	git config --global user.name openfde && git config --global user.email openfde@openfde.com
 fi
 
+if [ "$1" = "version" ];then
+	ver=$2
+	aospver=$3
+	arch=$4
+	num=$5
+else
+	ver=`date "+%y%m%d%H"`
+	aospver=14
+	arch=arm64
+	num=1
+fi
 mkdir aosp -p
 cd aosp
 git config --file /root/.gitconfig --includes --replace-all color.ui auto
@@ -87,7 +99,11 @@ if [ $? != 0 ];then
 fi
 log "step 9: breakfast fde_x100_arm64 user " 
 source build/envsetup.sh  
-breakfast fde_x100_arm64 user >>/root/make_imgs.log
+if [ "$arch" = "arm64" ];then
+	breakfast fde_x100_arm64 user >> $LOGPATH
+else #arch = arm64only 
+	breakfast fde_arm64_only user >> $LOGPATH
+fi
 log "step 10: make -j26 "
 make -j26 1>>/root/make1.log 2>&1
 if [ $? != 0 ];then
@@ -148,20 +164,14 @@ if [ "$1" != "daily" ];then
 	dst_dir="openfde-images"
 fi
 log "step 16: oss upload img.tgz to $dst_dir successfully" 
-aliyun ossutil -e oss-us-east-1-internal.aliyuncs.com cp -f img.tgz  oss://fde-ci/"$dst_dir"/img.tgz
+if [ "$arch" = "arm64" ];then
+	dstimg=img.tgz
+else
+	dstimg=img64only.tgz
+fi
+aliyun ossutil -e oss-us-east-1-internal.aliyuncs.com cp -f img.tgz  oss://fde-ci/"$dst_dir"/"$dstimg"
 
 log "step 17: call manager to exec deb make"
-if [ "$1" = "version" ];then
-	ver=$2
-	aospver=$3
-	arch=$4
-	num=$5
-else
-	ver=`date "+%y%m%d%H"`
-	aospver=14
-	arch=arm64
-	num=1
-fi
 set +e
 log "step 18: call start_deb_task $1 $ver $aospver $arch $num"
 call_next_start_deb_make $1 $ver $aospver $arch $num
