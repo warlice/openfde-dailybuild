@@ -60,6 +60,7 @@ else
 	arch=arm64
 	num=1
 fi
+log "$1 $ver $aospver $arch $num"
 mkdir aosp -p
 cd aosp
 git config --file /root/.gitconfig --includes --replace-all color.ui auto
