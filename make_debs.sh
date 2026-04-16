@@ -154,7 +154,7 @@ for i in "${!IMGS[@]}"; do
 	CONTAINER="${CONTAINERS[$i]}"
 	VERSION="${VERSIONS[$i]}"
 	if [ "$ARCH" != "arm64" ];then
-		if [ "$VERSIONS" = "beige" ];then
+		if [ "$VERSION" = "beige" ];then
 			log "only makes deb on ubuntus for non-arm64 archs"
 			exit 0
 		fi
