@@ -38,16 +38,16 @@ function delete_my_self()
 	  exit 1
   fi
 if [ "$1" = "daily" ];then
-	bash download_aosp.sh $1 1>/dev/null  &
+	bash download_aosp.sh $1 $2 1>/dev/null  &
+	disk_id=$2
 else
-	bash download_aosp.sh $1 $2 $3 $4 $5 1>/dev/null &
+	bash download_aosp.sh $1 $2 $3 $4 $5 $6 1>/dev/null &
+	disk_id=$6
 fi
 make_pid=$!
 wait $make_pid
 ret=$?
 if [ $ret != 0 ];then
-	serial=`udevadm info --query=property --name=/dev/vdb |grep  ID_SERIAL |awk -F "=" '{print $NF}'`
-	disk_id=`curl -s http://100.100.100.200/latest/meta-data/disks/$serial/id`
 	echo "cause $ret not 0, so delete disk id $disk_id" >> /root/download.log
 	delete_disk $disk_id
 	if [ $? != 0 ];then
