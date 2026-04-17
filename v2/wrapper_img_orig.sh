@@ -17,51 +17,52 @@ function delete_my_self()
 	return $?
 }
 
-  /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
-  if [ $? != 0 ];then
-	  echo "download aliyuncli failed"
-	  exit 1
-  fi
-  aliyun configure set \
-    --profile hangzhou \
-    --region cn-hangzhou \
-    --access-key-id  ACCESS_KEY_ID \
-    --access-key-secret ACCESS_KEY_SECRET
+/bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
+if [ $? != 0 ];then
+  echo "download aliyuncli failed"
+  exit 1
+fi
+aliyun configure set \
+--profile hangzhou \
+--region cn-hangzhou \
+--access-key-id  ACCESS_KEY_ID \
+--access-key-secret ACCESS_KEY_SECRET
 
-  aliyun configure set \
-    --profile default \
-    --region us-east-1 \
-    --access-key-id  ACCESS_KEY_ID \
-    --access-key-secret ACCESS_KEY_SECRET
+aliyun configure set \
+--profile default \
+--region us-east-1 \
+--access-key-id  ACCESS_KEY_ID \
+--access-key-secret ACCESS_KEY_SECRET
 
-  if [ $? != 0 ];then
-	  echo " configure failed"
-	  exit 1
-  fi
-if [ "$1" = "daily" ];then
-	bash make_imgs_no_download.sh $1 1>/dev/null  &
+if [ $? != 0 ];then
+  echo " configure failed"
+  exit 1
+fi
+if [ $1 = "daily" ];then
+  bash make_imgs.sh $1 1>/dev/null  &
 else
-	bash make_imgs_no_download.sh $1 $2 $3 $4 $5 1>/dev/null &
+  bash make_imgs.sh $1 $2 $3 $4 $5  1>/dev/null &
 fi
 make_pid=$!
 wait $make_pid
 now=`date "+%y%m%d_%H%M%S"`
 if [ "$1" = "daily" ];then
 	mode=daily
+	disk_id=$2
 	logpath=/root/logs/aospmk/${now}_daily_make_imgs.log
 else
 	mode=version
+	disk_id=$6
 	logpath=/root/logs/aospmk/${now}_version_make_imgs.log
 fi
+echo "delete disk id $disk_id" >> /root/make_imgs.log 
+aliyun ecs DeleteDisk --DiskId $disk_id --Force true --RegionId us-east-1 >>/root/make_imgs.log
 
 instance_id=`curl -s http://100.100.100.200/latest/meta-data/instance-id`
 echo "delete instance id $instance_id" >> /root/make_imgs.log 
 if [ -e /root/make1.log ];then
 	tail -n 5 /root/make1.log >> /root/make_imgs.log
 fi
-disk_id=`aliyun ecs DescribeDisks --DiskName  aosp_source_disk_350G_$mode  --RegionId us-east-1 --InstanceId $instance_id |jq -r .Disks.Disk[0].DiskId`
-echo "delete disk id $disk_id" >> /root/make_imgs.log 
-aliyun ecs DeleteDisk --DiskId $disk_id --Force true --RegionId us-east-1
 trans_log_to_manager $logpath
 if [ $? != 0 ];then
 	for i in {1..10}; do
