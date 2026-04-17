@@ -138,16 +138,16 @@ aliyun ecs AttachDisk --InstanceId $instance_id --DiskId  $disk_id
 
 ssh-keygen -R $ip
 if [ "$mode" = "daily" ];then
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh daily 1>/dev/null 2>&1 &"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh daily $disk_id 1>/dev/null 2>&1 &"
 	if [ $? != 0 ];then
 		sleep 15
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh daily 1>/dev/null 2>&1 &"
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh daily $disk_id 1>/dev/null 2>&1 &"
 	fi
 else
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh version $2 $3 $4 $5 1>/dev/null 2>&1 &"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh version $2 $3 $4 $5 $disk_id 1>/dev/null 2>&1 &"
 	if [ $? != 0 ];then
 		sleep 15
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh version $2 $3 $4 $5 1>/dev/null 2>&1 &"
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh version $2 $3 $4 $5 $disk_id 1>/dev/null 2>&1 &"
 	fi
 fi
 if [ $? != 0 ];then
