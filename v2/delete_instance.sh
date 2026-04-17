@@ -44,7 +44,7 @@ else
 		log "Error: type $1 is not support"
 		exit 1
 	fi
-	aliyun ecs DeleteDisk --DiskId $2  --RegionId us-east-1 >> $LOGPATH
+	aliyun ecs DeleteDisk --DiskId $2 --Force true --RegionId us-east-1 >> $LOGPATH
 	exit 0
 fi	
 log "delete instance $2"
