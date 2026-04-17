@@ -8,7 +8,7 @@ cd /root/
 tar -xf img.tgz -C /
 git clone https://gitee.com/openfde/make_deb
 cd make_deb
-./mkdeb.sh version aospver 
+./mkdeb.sh version aospver arch verNum
 deb_num=` ls debian/*.deb |wc -l`
 if [ $deb_num -ne 1 ];then
 	echo "deb file not found"

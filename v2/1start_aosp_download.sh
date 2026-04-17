@@ -1,0 +1,169 @@
+#!/bin/bash
+
+
+function usage() 
+{
+	echo "start_aosp_download.sh mode version aospver arch num"
+	echo "example: start_aosp_download.sh version  2.0.6  14|11 arm64only|x86|arm64 1|2"
+	echo "example: start_aosp_download.sh daily {date} {14} {arm64} {1}"
+}
+
+mode=daily
+if [ $# -eq 0 ]; then
+	usage
+	exit 1
+fi
+LOGPATH=/root/logs/start_download_daily.log
+if [ "$1" = "version" ];then
+	LOGPATH=/root/logs/start_download_version.log
+	mode=version
+	if [ -z "$2" ];then
+		echo "please input the version like 2.0.6"
+		usage
+		exit 1
+	fi
+	if [ -z "$3" ];then
+		echo "please input the asopver like 14"
+		usage
+		exit 1
+	fi
+	if [ -z "$4" ];then
+		echo "please input the arch like arm64|arm64only|x86"
+		usage
+		exit 1
+	fi
+	if [ -z "$5" ];then
+		echo "please input the num like 1  or 2 or 3 or ..."
+		usage
+		exit 1
+	fi
+fi
+mkdir -p /root/logs
+touch $LOGPATH 
+function w_log()
+{
+	s=`date "+%y%m%d_%H%M%S"`
+	echo  "$s: $1" |tee -a $LOGPATH
+}
+
+w_log $@
+aliyun configure switch --profile default 1>/dev/null 2>&1
+password=`grep password key.txt |awk -F " " '{print $2}' `
+w_log "step 1: create ecs instance"
+#instance_id="i-0xia13pjttzsbmnahmd3"
+if [ -z "$instance_id" ];then
+	instance_id=`aliyun ecs RunInstances  --RegionId us-east-1 --InstanceType ecs.e-c1m2.xlarge  --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd        \
+	       	--SecurityGroupId sg-0xi22iuffog8ylfh0or5  --VSwitchId vsw-0xi3vuydn6xui661xeiwu  --SystemDisk.Category cloud_essd    --SystemDisk.PerformanceLevel PL1     \
+	    	--Password $password   \
+	  	--InternetChargeType PayByTraffic --InternetMaxBandwidthOut 100 --Amount 1 --InstanceName openfde_aosp_download |jq -r .InstanceIdSets.InstanceIdSet[0] `
+	fi
+
+if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
+	w_log "failed: ecs create failed"
+	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "create ecs for aosp img downloader failed" -m "create ecs failed" -f 185457686@qq.com
+	exit 1
+fi
+sleep 30  # 等待实例启动
+w_log "step 2: wait until ecs is running"
+for i in {1..10}; do
+	sleep 15  # 等待实例启动
+	instanceStatus=`aliyun  ecs DescribeInstances --InstanceIds "[\"$instance_id\"]" --RegionId us-east-1 --InstanceName openfde_aosp_download |jq  .Instances.Instance[0].Status`
+	if [ "$instanceStatus" = '"Running"' ];then
+		w_log "step 2: ecs is running"
+		break	
+	fi
+done
+instanceStatus=`aliyun  ecs DescribeInstances --InstanceIds "[\"$instance_id\"]" --RegionId us-east-1 --InstanceName openfde_aosp_download |jq  .Instances.Instance[0].Status`
+if [ "$instanceStatus" != '"Running"' ];then
+	w_log "step 2: after 180s ecs is  still not running"
+	exit 1
+fi
+
+cd v2
+rm -rf download_aosp_shs.tgz
+w_log "step 3: tar download_aosp_shs.tgz"
+kid=`grep key-id key.txt |awk -F " " '{print $2}' `
+ksecret=`grep key-secret  key.txt |awk -F " " '{print $2}' `
+cp -a wrapper_download_orig.sh wrapper_download.sh
+sed -i "s/ACCESS_KEY_SECRET/$ksecret/g" wrapper_download.sh
+sed -i "s/ACCESS_KEY_ID/$kid/g" wrapper_download.sh
+tar -zcvpf download_aosp_shs.tgz wrapper_download.sh download_aosp.sh .ssh/authorized_keys 1>/dev/null 2>&1
+
+
+shs=`cat /root/v2/download_aosp_shs.tgz |base64`
+w_log "step 4: transferr download_aosp_shs.tgz"
+invoke_id=`aliyun ecs RunCommand  --Name "transfer_id" --Type "RunShellScript" --InstanceId.1 $instance_id  --RegionId us-east-1 \
+--CommandContent "echo '$shs' | base64 -d > /root/download_aosp_shs.tgz && tar -xf /root/download_aosp_shs.tgz -C /root/ && chmod +x /root/download_aosp.sh" |jq -r '.InvokeId'`
+if [[ -z "$invoke_id" || "$invoke_id" == "null" ]]; then
+	w_log "invoke id not found or exec command failed,to delete instance $instance_id exit"
+	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	exit 1
+fi
+
+for i in {1..10}; do
+	result=`aliyun ecs DescribeInvocationResults  --InvokeId "$invoke_id"`
+	status=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvokeRecordStatus')
+	output=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].Output')
+	invocationStatus=$(echo "$result" | jq -r '.Invocation.InvocationResults.InvocationResult[0].InvocationStatus')
+
+	w_log "current status: $status"
+	if [ "$status" = "Finished" ]; then
+		if [ "$invocationStatus" = "Success" ]; then
+			w_log "transfer file success"
+			break
+		fi
+	elif [ "$status" = "Failed" ]; then
+		w_log "transfer file failed "
+		w_log "to delete instance $instance_id"
+		aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+		exit 1
+	fi
+	sleep 10
+done
+
+ip=`aliyun ecs DescribeInstances --InstanceName openfde_aosp_download --RegionId us-east-1  --InstanceIds "[\"$instance_id\"]" |jq -r .Instances.Instance[0].PublicIpAddress.IpAddress[0]`
+if [ -z "$ip" ];then
+	w_log "ip not founded"
+	w_log "to delete instance $instance_id"
+	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	exit 1
+fi
+
+#create disk
+disk_id=`aliyun ecs CreateDisk --RegionId us-east-1 --ZoneId us-east-1a --PerformanceLevel PL1 --DiskName aosp_source_disk_350G_$mode --Size 350  --DiskCategory cloud_essd \
+       --Tag.1.Key dtype  --Tag.1.Value aospdata |jq -r .DiskId`
+if [[ -z "$disk_id"  || "$disk_id" == "null" ]];then
+	w_log "delete $instance_id forcely due to creating disk failed"
+	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	exit 1
+fi
+w_log "attachdisk $instance_id $disk_id"
+aliyun ecs AttachDisk --InstanceId $instance_id --DiskId  $disk_id
+
+ssh-keygen -R $ip
+if [ "$mode" = "daily" ];then
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh daily $disk_id 1>/dev/null 2>&1 &"
+	if [ $? != 0 ];then
+		sleep 15
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh daily $disk_id 1>/dev/null 2>&1 &"
+	fi
+else
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh version $2 $3 $4 $5 $disk_id 1>/dev/null 2>&1 &"
+	if [ $? != 0 ];then
+		sleep 15
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh version $2 $3 $4 $5 $disk_id 1>/dev/null 2>&1 &"
+	fi
+fi
+if [ $? != 0 ];then
+	w_log "exec remote cmd through ssh failed"
+	w_log "to delete instance $instance_id"
+	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	w_log "to delete diskid $disk_id"
+	aliyun ecs DeleteDisk --DiskId $disk_id --Force true  --RegionId us-east-1
+	exit 1
+fi
+w_log "step end: run command success"
+exit 0
+
+
+

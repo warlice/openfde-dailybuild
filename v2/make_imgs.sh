@@ -11,7 +11,7 @@ function log(){
 
 function call_next_start_deb_make() {
 	invoke_id=`aliyun ecs RunCommand --RegionId cn-beijing  --Name "call_next_deb_make_task" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
-	  --CommandContent "nohup bash /root/call_start_deb_task.sh $1 $2 $3 $4 $5 1>/dev/null 2>&1"  | jq -r '.InvokeId'` 
+	  --CommandContent "nohup bash /root/v2/call_start_deb_task.sh $1 $2 $3 $4 $5 1>/dev/null 2>&1"  | jq -r '.InvokeId'` 
 	if [ $? != 0 ];then
 		return 1
 	fi
@@ -60,32 +60,15 @@ else
 	arch=arm64
 	num=1
 fi
-log "$1 $ver $aospver $arch $num"
 mkdir aosp -p
+log "mount /dev/nvme1n1 aosp " 
+mount /dev/nvme1n1 aosp
 cd aosp
-git config --file /root/.gitconfig --includes --replace-all color.ui auto
 
-log "step 4: repo init " 
-repo init -u https://github.com/openfde/fde-manifests -b fde_14 --depth=1
-cp /root/aosp/.repo/repo/repo /usr/bin/repo
-log "step 5: repo init --git-lfs "
-repo init -u https://github.com/openfde/fde-manifests -b fde_14 --depth=1  --git-lfs
-set +e
-log  "step 6: repo sync 28 first " 
-repo sync -j28
-if [ $? != 0 ];then
-	for i in {1..10}; do
-		log  "step 6: repo sync 10 again " 
-		repo sync -j16
-		if [ $? = 0 ];then
-			break
-		fi
-		sleep 10
-	done
-fi
 log "step 7: source envsetup.sh " 
 source build/envsetup.sh  
 log "step 8: syncFdeApk " 
+set +e
 syncFdeApk 
 if [ $? != 0 ];then
 	for i in {1..10}; do
@@ -98,28 +81,27 @@ if [ $? != 0 ];then
 		sleep 10
 	done
 fi
-log "step 9: breakfast fde_x100_arm64 user " 
+set -e
 source build/envsetup.sh  
-if [ "$arch" = "arm64" ];then
-	breakfast fde_x100_arm64 user >> $LOGPATH
-else #arch = arm64only 
-	breakfast fde_arm64_only user >> $LOGPATH
+if [ $arch = "arm64" ];then
+	log "step 9: breakfast fde_x100_arm64 user " 
+	breakfast fde_x100_arm64 user >>$LOGPATH
+else
+	log "step 9: breakfast fde_arm64_only user " 
+	breakfast fde_arm64_only user >>$LOGPATH
 fi
 log "step 10: make -j26 "
+set +e 
 make -j26 1>>/root/make1.log 2>&1
 if [ $? != 0 ];then
 	#give a second chance to download all the code
 	sleep 30
 	log  "step 10: make 24 second " 
-	source build/envsetup.sh 
-	breakfast fde_x100_arm64 user 1>>/root/make_imgs.log 2>&1
 	make -j24 
 	if [ $? != 0 ];then
 		sleep 20
 		for i in {1..5}; do
 			log  "step 10: try make 18 for 5 times " 
-			source build/envsetup.sh  
-			breakfast fde_x100_arm64 user
 			make -j18
 			if [ $? = 0 ];then
 				break
@@ -128,8 +110,6 @@ if [ $? != 0 ];then
 		done
 		for i in {1..5}; do
 			log  "step 10: try make 12 for 5 times " 
-			source build/envsetup.sh  
-			breakfast fde_x100_arm64 user
 			make -j12
 			if [ $? = 0 ];then
 				break
@@ -138,7 +118,6 @@ if [ $? != 0 ];then
 		done
 	fi
 fi
-
 cd /root
 if [ ! -e make_deb ];then
 	for i in {1..10}; do
@@ -164,25 +143,27 @@ dst_dir="daily-images"
 if [ "$1" != "daily" ];then
 	dst_dir="openfde-images"
 fi
-log "step 16: oss upload img.tgz to $dst_dir successfully" 
 if [ "$arch" = "arm64" ];then
 	dstimg=img.tgz
 else
 	dstimg=img64only.tgz
 fi
-aliyun ossutil -e oss-us-east-1-internal.aliyuncs.com cp -f img.tgz  oss://fde-ci/"$dst_dir"/"$dstimg"
+log "step 16: oss upload img.tgz to $dst_dir successfully" 
+aliyun ossutil -e oss-us-east-1-internal.aliyuncs.com cp -f img.tgz  oss://fde-ci/"$dst_dir"/$dstimg
 
 log "step 17: call manager to exec deb make"
 set +e
 log "step 18: call start_deb_task $1 $ver $aospver $arch $num"
-call_next_start_deb_make $1 $ver $aospver $arch $num
+call_next_start_deb_make $1 $ver $aospver $arch $num 
 if [ $? != 0 ];then
 	log "step 19: retry call start_deb_task "
-	call_next_start_deb_make $1 $ver $aospver $arch $num
+	call_next_start_deb_make $1 $ver $aospver $arch $num 
 	if [ $? != 0 ];then
 		log "step 20: retry call start_deb_task still failed "
 		exit 1
 	fi
 fi
+
+umount /root/aosp
 exit 0
 

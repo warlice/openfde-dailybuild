@@ -25,12 +25,13 @@ if  [ "$1" = "daily" ];then
 	ImgPre=daily-images
 else
 	mode="testing"
-	ImgPre=openfde-images
 	ver=$2
 	basever=$3
 	ARCH=$4
 	VERNum=$5
+	ImgPre=openfde-images
 fi
+
 if [ "$ARCH" = "arm64" ];then
 	AN_IMG=img.tgz
 else
@@ -119,7 +120,7 @@ touch /root/oss.log
 USEndpoint="oss-us-east-1.aliyuncs.com"
 aliyun ossutil stat -e $USEndpoint $osspath
 if [ $? != 0 ];then
-	log "step 3 $osspath is not exist"
+	log "step 3 daily-images/img.tgz is not exist"
 	exit 1
 fi
 aliyun ossutil cp -e $USEndpoint $osspath . > /root/oss.log 2>&1
@@ -168,6 +169,7 @@ for i in "${!IMGS[@]}"; do
 
 	buildPublishClear $IMG "$NEW_IMG" "$CONTAINER" "$VERSION"
 done
+
 #****************make deb for kylin************************#
 log "wget kylin v10 image" 
 IMGTGZ="kylin_v10sp1.img.tgz"

@@ -24,13 +24,20 @@ if [ "$1" = "deb" ];then
 		exit 1
 	fi
 
-else
-	aliyun configure switch --profile default >> logs/delete_instances.log
-	id=`aliyun ecs DescribeInstances --InstanceIds "[\"$2\"]" --InstanceName openfde_aosp_make |jq -r .Instances.Instance[0].InstanceId`
-	if [ "$id" != "$2" ];then
-		log "Error: id not match $2 and $id wont delete "
-		exit 1
-	fi
+elif [ "$1" = "aosp" ];then
+        aliyun configure switch --profile default >> logs/delete_instances.log
+        id=`aliyun ecs DescribeInstances --InstanceIds "[\"$2\"]" --InstanceName openfde_aosp_make |jq -r .Instances.Instance[0].InstanceId`
+        if [ "$id" != "$2" ];then
+                log "Error: id not match $2 and $id wont delete "
+                exit 1
+        fi
+elif [ "$1" = "download" ];then
+       aliyun configure switch --profile default >> logs/delete_instances.log
+       id=`aliyun ecs DescribeInstances --InstanceIds "[\"$2\"]" --InstanceName openfde_aosp_download |jq -r .Instances.Instance[0].InstanceId`
+       if [ "$id" != "$2" ];then
+               log "Error: id not match $2 and $id wont delete "
+               exit 1
+       fi
 
 fi	
 log "delete instance $2"
