@@ -17,20 +17,27 @@ NEEDRESTART_SUSPEND=1 apt install  -y  docker.io 1>/dev/null
 dockerScript="run_in_docker_make_deb.sh"
 
 mode="daily"
-osspath="oss://fde-ci/daily-images/img.tgz"
 if  [ "$1" = "daily" ];then
 	ver=`date "+%y%m%d%H"`
 	basever="14"
 	ARCH="arm64"
 	VERNum="1"
+	ImgPre=daily-images
 else
 	mode="testing"
-	osspath="oss://fde-ci/openfde-images/img.tgz"
 	ver=$2
 	basever=$3
 	ARCH=$4
 	VERNum=$5
+	ImgPre=openfde-images
 fi
+
+if [ "$ARCH" = "arm64" ];then
+	AN_IMG=img.tgz
+else
+	AN_IMG=img64only.tgz
+fi
+osspath="oss://fde-ci/$ImgPre/$AN_IMG"
 
 function clearWork() {
 	container=$1
@@ -121,6 +128,9 @@ if [ $? != 0 ];then
 	log "step 3 copy $osspath failed"
 	exit 1
 fi
+if [ "$AN_IMG" = "img64only.tgz" ];then
+	mv $AN_IMG img.tgz
+fi	
 aliyun configure switch --profile default
 set -e
 OSSBUCKET=http://openfde.oss-cn-hangzhou-internal.aliyuncs.com/system_images
@@ -144,6 +154,12 @@ for i in "${!IMGS[@]}"; do
 	NEW_IMG="${NEW_IMGS[$i]}"
 	CONTAINER="${CONTAINERS[$i]}"
 	VERSION="${VERSIONS[$i]}"
+	if [ "$ARCH" != "arm64" ];then
+		if [ "$VERSION" = "beige" ];then
+			log "only makes deb on ubuntus for non-arm64 archs"
+			exit 0
+		fi
+	fi
 	log "wget $IMGFILE" 
 	wget $OSSBUCKET/$IMGFILE 1>/dev/null 2>&1
 

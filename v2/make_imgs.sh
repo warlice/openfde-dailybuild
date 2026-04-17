@@ -1,9 +1,10 @@
 #!/bin/bash
 
 
+LOGPATH=/root/make_imgs.log
 function log(){
   s=`date "+%y%m%d_%H%M%S:"`
-  echo  "$s $1" >> /root/make_imgs.log
+  echo  "$s $1" >> $LOGPATH
 }
 
 
@@ -48,6 +49,17 @@ if [ ! -e "/root/aosp" ];then
 	git config --global user.name openfde && git config --global user.email openfde@openfde.com
 fi
 
+if [ "$1" = "version" ];then
+	ver=$2
+	aospver=$3
+	arch=$4
+	num=$5
+else
+	ver=`date "+%y%m%d%H"`
+	aospver=14
+	arch=arm64
+	num=1
+fi
 mkdir aosp -p
 log "mount /dev/vdb /aosp " 
 mount /dev/vdb /aosp
@@ -56,6 +68,7 @@ cd aosp
 log "step 7: source envsetup.sh " 
 source build/envsetup.sh  
 log "step 8: syncFdeApk " 
+set +e
 syncFdeApk 
 if [ $? != 0 ];then
 	for i in {1..10}; do
@@ -68,24 +81,27 @@ if [ $? != 0 ];then
 		sleep 10
 	done
 fi
-log "step 9: breakfast fde_x100_arm64 user " 
+set -e
 source build/envsetup.sh  
-breakfast fde_x100_arm64 user >>/root/make_imgs.log
+if [ $arch = "arm64" ];then
+	log "step 9: breakfast fde_x100_arm64 user " 
+	breakfast fde_x100_arm64 user >>$LOGPATH
+else
+	log "step 9: breakfast fde_arm64_only user " 
+	breakfast fde_arm64_only user >>$LOGPATH
+fi
 log "step 10: make -j26 "
+set +e 
 make -j26 1>>/root/make1.log 2>&1
 if [ $? != 0 ];then
 	#give a second chance to download all the code
 	sleep 30
 	log  "step 10: make 24 second " 
-	source build/envsetup.sh 
-	breakfast fde_x100_arm64 user 1>>/root/make_imgs.log 2>&1
 	make -j24 
 	if [ $? != 0 ];then
 		sleep 20
 		for i in {1..5}; do
 			log  "step 10: try make 18 for 5 times " 
-			source build/envsetup.sh  
-			breakfast fde_x100_arm64 user
 			make -j18
 			if [ $? = 0 ];then
 				break
@@ -94,8 +110,6 @@ if [ $? != 0 ];then
 		done
 		for i in {1..5}; do
 			log  "step 10: try make 12 for 5 times " 
-			source build/envsetup.sh  
-			breakfast fde_x100_arm64 user
 			make -j12
 			if [ $? = 0 ];then
 				break
@@ -104,7 +118,6 @@ if [ $? != 0 ];then
 		done
 	fi
 fi
-
 cd /root
 if [ ! -e make_deb ];then
 	for i in {1..10}; do
@@ -130,27 +143,21 @@ dst_dir="daily-images"
 if [ "$1" != "daily" ];then
 	dst_dir="openfde-images"
 fi
+if [ "$arch" = "arm64" ];then
+	dstimg=img.tgz
+else
+	dstimg=img64only.tgz
+fi
 log "step 16: oss upload img.tgz to $dst_dir successfully" 
-aliyun ossutil -e oss-us-east-1-internal.aliyuncs.com cp -f img.tgz  oss://fde-ci/"$dst_dir"/img.tgz
+aliyun ossutil -e oss-us-east-1-internal.aliyuncs.com cp -f img.tgz  oss://fde-ci/"$dst_dir"/$dstimg
 
 log "step 17: call manager to exec deb make"
-if [ "$1" = "version" ];then
-	ver=$2
-	aospver=$3
-	arch=$4
-	num=$5
-else
-	ver=`date "+%y%m%d%H"`
-	aospver=14
-	arch=arm64
-	num=1
-fi
 set +e
 log "step 18: call start_deb_task $1 $ver $aospver $arch $num"
-call_next_start_deb_make $1 $ver $aospver $arch $num
+call_next_start_deb_make $1 $ver $aospver $arch $num 
 if [ $? != 0 ];then
 	log "step 19: retry call start_deb_task "
-	call_next_start_deb_make $1 $ver $aospver $arch $num
+	call_next_start_deb_make $1 $ver $aospver $arch $num 
 	if [ $? != 0 ];then
 		log "step 20: retry call start_deb_task still failed "
 		exit 1
