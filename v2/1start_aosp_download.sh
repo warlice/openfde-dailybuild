@@ -9,6 +9,10 @@ function usage()
 }
 
 mode=daily
+if [ $# -eq 0 ]; then
+	usage
+	exit 1
+fi
 LOGPATH=/root/logs/start_download_daily.log
 if [ "$1" = "version" ];then
 	LOGPATH=/root/logs/start_download_version.log
