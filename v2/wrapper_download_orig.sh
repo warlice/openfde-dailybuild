@@ -9,11 +9,17 @@ function trans_log_to_manager()
 	  --CommandContent "echo '$logbase' |base64 -d  > $1" 
 	return $?
 }
+function delete_disk() 
+{
+	aliyun ecs RunCommand  --RegionId cn-beijing --Name "delete_my_self_aosp" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
+	  --CommandContent "bash /root/v2/delete_instance.sh disk $1" 
+	return $?
+}
 
 function delete_my_self() 
 {
 	aliyun ecs RunCommand  --RegionId cn-beijing --Name "delete_my_self_aosp" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
-	  --CommandContent "bash /root/delete_instance.sh download $1" 
+	  --CommandContent "bash /root/v2/delete_instance.sh download $1" 
 	return $?
 }
 
@@ -27,13 +33,6 @@ function delete_my_self()
     --region cn-hangzhou \
     --access-key-id  ACCESS_KEY_ID \
     --access-key-secret ACCESS_KEY_SECRET
-
-  aliyun configure set \
-    --profile default \
-    --region us-east-1 \
-    --access-key-id  ACCESS_KEY_ID \
-    --access-key-secret ACCESS_KEY_SECRET
-
   if [ $? != 0 ];then
 	  echo " configure failed"
 	  exit 1
@@ -45,6 +44,22 @@ else
 fi
 make_pid=$!
 wait $make_pid
+ret=$?
+if [ $ret != 0 ];then
+	serial=`udevadm info --query=property --name=/dev/vdb |grep  ID_SERIAL |awk -F "=" '{print $NF}'`
+	disk_id=`curl -s http://100.100.100.200/latest/meta-data/disks/$serial/id`
+	echo "cause $ret not 0, so delete disk id $disk_id" >> /root/download.log
+	delete_disk $disk_id
+	if [ $? != 0 ];then
+		for i in {1..10}; do
+			sleep 13
+			delete_disk $disk_id
+			if [ $? = 0 ];then
+				break
+			fi
+		done
+	fi
+fi
 now=`date "+%y%m%d_%H%M%S"`
 if [ "$1" = "daily" ];then
 	logpath=/root/logs/aospdown/${now}_daily_download.log
