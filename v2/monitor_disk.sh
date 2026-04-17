@@ -12,11 +12,9 @@ echo "$json" | jq -c '.Disks.Disk[]' | while read disk; do
     # 计算时间差（秒）
     diff=$((now_ts - create_ts))
     if [ $diff -le 10800 ] && [ $diff -ge 0 ]; then
-    	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "disk id $disk_id test crontab" -m "more than 3 hours" -f 185457686@qq.com
-    	#echo "$disk_id 创建时间在12小时内"
+    	echo "$disk_id 创建时间在3小时内" 1>/dev/null 2>&1
     else
     	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "disk id $disk_id more than 3hours" -m "more than 3 hours" -f 185457686@qq.com
-    	#echo "$disk_id 创建时间超过12小时"
     fi
 done
 json=$(./list_instances.sh aosp)
@@ -31,11 +29,9 @@ echo "$json" | jq -c '.Instances.Instance[]' | while read instance; do
     # 计算时间差（秒）
     diff=$((now_ts - create_ts))
     if [ $diff -le 10800 ] && [ $diff -ge 0 ]; then
-    	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "instance id $instance_id test crontab" -m "more than 3 hours" -f 185457686@qq.com
-    	#echo "$disk_id 创建时间在12小时内"
+	    echo "in 3 " 1>/dev/null 2>&1
     else
     	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "instance id $instance_id more than 3hours" -m "more than 3 hours" -f 185457686@qq.com
-    	#echo "$disk_id 创建时间超过12小时"
     fi
 done
 
