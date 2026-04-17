@@ -7,7 +7,7 @@ function log(){
 
 function call_next_start_img_make() {
 	invoke_id=`aliyun ecs RunCommand --RegionId cn-beijing  --Name "call_next_img_make_task" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
-	  --CommandContent "nohup bash /root/v2/call_start_img_task.sh $1 $2 $3 $4 $5 1>/dev/null 2>&1"  | jq -r '.InvokeId'` 
+	  --CommandContent "nohup bash /root/v2/call_start_img_task.sh $1 $2 $3 $4 $5 $6 1>/dev/null 2>&1"  | jq -r '.InvokeId'` 
 	if [ $? != 0 ];then
 		return 1
 	fi
@@ -32,6 +32,19 @@ function call_next_start_img_make() {
 	done
 }
 
+if [ "$1" = "version" ];then
+	ver=$2
+	aospver=$3
+	arch=$4
+	num=$5
+	disk_id=$6
+else
+	disk_id=$2
+	ver=`date "+%y%m%d%H"`
+	aospver=14
+	arch=arm64
+	num=1
+fi
 log "step 1: stop_unattended-upgrades" 
 systemctl stop unattended-upgrades
 set -e
@@ -70,23 +83,12 @@ fi
 log " umount vdb"
 umount /root/aosp
 log "call manager to exec task aosp img making"
-if [ "$1" = "version" ];then
-	ver=$2
-	aospver=$3
-	arch=$4
-	num=$5
-else
-	ver=`date "+%y%m%d%H"`
-	aospver=14
-	arch=arm64
-	num=1
-fi
 set +e
-log "call start_img_make_task $1 $ver $aospver $arch $num"
-call_next_start_img_make $1 $ver $aospver $arch $num
+log "call start_img_make_task $1 $ver $aospver $arch $num $disk_id"
+call_next_start_img_make $1 $ver $aospver $arch $num $disk_id
 if [ $? != 0 ];then
 	log "retry call start_img_task "
-	call_next_start_img_make $1 $ver $aospver $arch $num
+	call_next_start_img_make $1 $ver $aospver $arch $num $disk_id
 	if [ $? != 0 ];then
 		log "retry call start_img_task still failed "
 		exit 1
