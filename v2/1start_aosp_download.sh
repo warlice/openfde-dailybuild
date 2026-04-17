@@ -74,17 +74,6 @@ if [ "$instanceStatus" != '"Running"' ];then
 	w_log "step 2: after 180s ecs is  still not running"
 	exit 1
 fi
-#create disk
-disk_id=`aliyun ecs CreateDisk --RegionId us-east-1 --ZoneId us-east-1a --PerformanceLevel PL1 --DiskName aosp_source_disk_350G_$mode --Size 350  --DiskCategory cloud_essd \
-       --Tag.1.Key dtype  --Tag.1.Value aospdata |jq -r .DiskId`
-if [[ -z "$disk_id"  || "$disk_id" == "null" ]];then
-	w_log "delete $instance_id forcely due to creating disk failed"
-	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
-	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "create disk for aosp downloader failed" -m "create disk failed" -f 185457686@qq.com
-	exit 1
-fi
-w_log "attachdisk $instance_id $disk_id"
-aliyun ecs AttachDisk --InstanceId $instance_id --DiskId  $disk_id
 
 cd v2
 rm -rf download_aosp_shs.tgz
@@ -102,7 +91,7 @@ w_log "step 4: transferr download_aosp_shs.tgz"
 invoke_id=`aliyun ecs RunCommand  --Name "transfer_id" --Type "RunShellScript" --InstanceId.1 $instance_id  --RegionId us-east-1 \
 --CommandContent "echo '$shs' | base64 -d > /root/download_aosp_shs.tgz && tar -xf /root/download_aosp_shs.tgz -C /root/ && chmod +x /root/download_aosp.sh" |jq -r '.InvokeId'`
 if [[ -z "$invoke_id" || "$invoke_id" == "null" ]]; then
-	w_log "invoke id not found or exec command failed, exit"
+	w_log "invoke id not found or exec command failed,to delete instance $instance_id exit"
 	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
 	exit 1
 fi
@@ -135,6 +124,18 @@ if [ -z "$ip" ];then
 	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
 	exit 1
 fi
+
+#create disk
+disk_id=`aliyun ecs CreateDisk --RegionId us-east-1 --ZoneId us-east-1a --PerformanceLevel PL1 --DiskName aosp_source_disk_350G_$mode --Size 350  --DiskCategory cloud_essd \
+       --Tag.1.Key dtype  --Tag.1.Value aospdata |jq -r .DiskId`
+if [[ -z "$disk_id"  || "$disk_id" == "null" ]];then
+	w_log "delete $instance_id forcely due to creating disk failed"
+	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	exit 1
+fi
+w_log "attachdisk $instance_id $disk_id"
+aliyun ecs AttachDisk --InstanceId $instance_id --DiskId  $disk_id
+
 ssh-keygen -R $ip
 if [ "$mode" = "daily" ];then
 	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_download.sh daily 1>/dev/null 2>&1 &"
