@@ -76,10 +76,10 @@ rm -rf package_deb_shs.tgz
 w_log "step 3: tar package_debs_shs.tgz"
 kid=`grep key-id key.txt |awk -F " " '{print $2}' `
 ksecret=`grep key-secret  key.txt |awk -F " " '{print $2}' `
-cp -a wrapper_2_orig.sh wrapper_2.sh
-sed -i "s/ACCESS_KEY_SECRET/$ksecret/g" wrapper_2.sh
-sed -i "s/ACCESS_KEY_ID/$kid/g" wrapper_2.sh
-tar -zcvpf package_debs_shs.tgz make_deb_data  wrapper_2.sh make_debs.sh .ssh/authorized_keys .ssh/id_rsa  .ssh/id_rsa.pub 1>/dev/null 2>&1
+cp -a wrapper_deb_orig.sh wrapper_deb.sh
+sed -i "s/ACCESS_KEY_SECRET/$ksecret/g" wrapper_deb.sh
+sed -i "s/ACCESS_KEY_ID/$kid/g" wrapper_deb.sh
+tar -zcvpf package_debs_shs.tgz make_deb_data  wrapper_deb.sh make_debs.sh .ssh/authorized_keys .ssh/id_rsa  .ssh/id_rsa.pub 1>/dev/null 2>&1
 
 shs=`cat /root/v2/package_debs_shs.tgz |base64`
 
@@ -122,19 +122,19 @@ ssh-keygen -R $ip
 #transfer and exec wrapper_img.sh in the remote ecs
 if [ "$mode" = "daily" ];then
 	w_log "step 5: exec wrapper_deb_mk.sh daily"
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_2.sh daily 1>/dev/null 2>&1 &"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh daily 1>/dev/null 2>&1 &"
 	if [ $? != 0 ];then
 		sleep 15
 		w_log "tray ssh exec again daily"
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_2.sh daily 1>/dev/null 2>&1 &"
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh daily 1>/dev/null 2>&1 &"
 	fi
 else 
 	w_log "step 5 wrapper_deb_mk.sh version $2 $3 $4 $5"
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_2.sh  version $2 $3 $4 $5  1>/dev/null 2>&1 & "
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5  1>/dev/null 2>&1 & "
 	if [ $? != 0 ];then
 		sleep 15
 		w_log "tray ssh exec again version"
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_2.sh  version $2 $3 $4 $5  1>/dev/null 2>&1 & "
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5  1>/dev/null 2>&1 & "
 	fi
 fi
 
