@@ -5,6 +5,7 @@ v2/wrapper_img.sh
 v2/wrapper_download.sh
 wrapper_2.sh
 wrapper_img.sh
+*selected_editor
 *.log
 *.tgz
 v2/*.tgz
