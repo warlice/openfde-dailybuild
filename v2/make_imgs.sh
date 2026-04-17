@@ -61,8 +61,8 @@ else
 	num=1
 fi
 mkdir aosp -p
-log "mount /dev/vdb /aosp " 
-mount /dev/vdb /aosp
+log "mount /dev/nvme1n1 aosp " 
+mount /dev/nvme1n1 aosp
 cd aosp
 
 log "step 7: source envsetup.sh " 

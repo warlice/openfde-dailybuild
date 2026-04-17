@@ -9,11 +9,17 @@ function trans_log_to_manager()
 	  --CommandContent "echo '$logbase' |base64 -d  > $1" 
 	return $?
 }
+function delete_disk() 
+{
+	aliyun ecs RunCommand  --RegionId cn-beijing --Name "delete_my_self_aosp" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
+	  --CommandContent "bash /root/v2/delete_instance.sh disk $1" 
+	return $?
+}
 
 function delete_my_self() 
 {
 	aliyun ecs RunCommand  --RegionId cn-beijing --Name "delete_my_self_aosp" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
-	  --CommandContent "bash /root/delete_instance.sh aosp $1" 
+	  --CommandContent "bash /root/v2/delete_instance.sh aosp $1" 
 	return $?
 }
 
@@ -56,9 +62,20 @@ else
 	logpath=/root/logs/aospmk/${now}_version_make_imgs.log
 fi
 echo "delete disk id $disk_id" >> /root/make_imgs.log 
-aliyun ecs DeleteDisk --DiskId $disk_id --Force true --RegionId us-east-1 >>/root/make_imgs.log
-
 instance_id=`curl -s http://100.100.100.200/latest/meta-data/instance-id`
+umount /root/aosp 1>/dev/null 2>&1
+aliyun ecs DetachDisk --InstanceId $instance_id --DiskId $disk_id
+delete_disk $disk_id
+if [ $? != 0 ];then
+	for i in {1..10}; do
+		sleep 13
+		delete_disk $disk_id
+		if [ $? = 0 ];then
+			break
+		fi
+	done
+fi
+
 echo "delete instance id $instance_id" >> /root/make_imgs.log 
 if [ -e /root/make1.log ];then
 	tail -n 5 /root/make1.log >> /root/make_imgs.log

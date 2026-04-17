@@ -3,7 +3,7 @@
 LOGPATH=/root/logs/delete_instances.log
 function log(){
   s=`date "+%y%m%d_%H%M%S:"`
-  echo  "$s $1" |tee -a $LOGPATH
+  echo  "$s $@" |tee -a $LOGPATH
 }
 
 log $@
@@ -44,7 +44,13 @@ else
 		log "Error: type $1 is not support"
 		exit 1
 	fi
-	aliyun ecs DeleteDisk --DiskId $2 --Force true --RegionId us-east-1 >> $LOGPATH
+	aliyun configure switch --profile default >> $LOGPATH
+	id=`aliyun ecs DescribeDisks --RegionId us-east-1 --Tag.1.Key dtype  --Tag.1.Value aospdata  |jq -r .Disks.Disk[0].DiskId`
+	if [ "$id" != "$2" ];then
+		log "Error: id not match $2 and $id wont delete "
+		exit 1
+	fi
+	aliyun ecs DeleteDisk --DiskId $2  --RegionId us-east-1 >> $LOGPATH
 	exit 0
 fi	
 log "delete instance $2"

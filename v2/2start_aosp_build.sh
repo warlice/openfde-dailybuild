@@ -39,10 +39,10 @@ touch $LOGPATH
 function w_log()
 {
 	s=`date "+%y%m%d_%H%M%S"`
-	echo  "$s: $1" |tee -a $LOGPATH
+	echo  "$s: $@" |tee -a $LOGPATH
 }
 
-w_log $@
+w_log "$@"
 aliyun configure switch --profile default 1>/dev/null 2>&1
 w_log "step 1: create ecs instance"
 password=`grep password key.txt |awk -F " " '{print $2}' `
@@ -135,16 +135,16 @@ if [ -z "$ip" ];then
 fi
 ssh-keygen -R $ip
 if [ "$mode" = "daily" ];then
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily 1>/dev/null 2>&1 &"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily $2 1>/dev/null 2>&1 &"
 	if [ $? != 0 ];then
 		sleep 15
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily 1>/dev/null 2>&1 &"
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily $2 1>/dev/null 2>&1 &"
 	fi
 else
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh version $2 $3 $4 $5 1>/dev/null 2>&1 &"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh version $2 $3 $4 $5 $6 1>/dev/null 2>&1 &"
 	if [ $? != 0 ];then
 		sleep 15
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh version $2 $3 $4 $5 1>/dev/null 2>&1 &"
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh version $2 $3 $4 $5 $6 1>/dev/null 2>&1 &"
 	fi
 fi
 if [ $? != 0 ];then
