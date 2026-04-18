@@ -44,21 +44,16 @@ if [ $? != 0 ];then
   echo " configure failed"
   exit 1
 fi
-if [ $1 = "daily" ];then
-  bash make_imgs.sh $1 1>/dev/null  &
-else
-  bash make_imgs.sh $1 $2 $3 $4 $5  1>/dev/null &
-fi
+disk_id=$6
+bash make_imgs.sh $1 $2 $3 $4 $5  1>/dev/null &
 make_pid=$!
 wait $make_pid
 now=`date "+%y%m%d_%H%M%S"`
 if [ "$1" = "daily" ];then
 	mode=daily
-	disk_id=$2
 	logpath=/root/logs/aospmk/${now}_daily_make_imgs.log
 else
 	mode=version
-	disk_id=$6
 	logpath=/root/logs/aospmk/${now}_version_make_imgs.log
 fi
 echo "delete disk id $disk_id" >> /root/make_imgs.log 
