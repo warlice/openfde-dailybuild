@@ -135,10 +135,10 @@ if [ -z "$ip" ];then
 fi
 ssh-keygen -R $ip
 if [ "$mode" = "daily" ];then
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily $2 1>/dev/null 2>&1 &"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily $2 $3 $4 $5 $6 1>/dev/null 2>&1 &"
 	if [ $? != 0 ];then
 		sleep 15
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily $2 1>/dev/null 2>&1 &"
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh daily $2 $3 $4 $5 $6 1>/dev/null 2>&1 &"
 	fi
 else
 	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_img.sh version $2 $3 $4 $5 $6 1>/dev/null 2>&1 &"
