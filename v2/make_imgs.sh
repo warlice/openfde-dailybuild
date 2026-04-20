@@ -132,7 +132,11 @@ fi
 set -e
 cd make_deb
 log  "step 12: copy system.img and vendor.img to make_deb "
-out="/root/aosp/out/target/product/fde_arm64"
+if [ $arch = "arm64" ];then
+	out="/root/aosp/out/target/product/fde_arm64"
+else
+	out="/root/aosp/out/target/product/fde_arm64_only"
+fi
 cp -a "$out"/system.img system.img
 cp -a "$out"/vendor.img vendor.img
 log "step 14: packapk.sh -y "
