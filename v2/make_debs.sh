@@ -86,6 +86,7 @@ function buildPublishClear() {
 	sed -i "/aospver/s/aospver/$basever/" works/$dockerScript
 	sed -i "s/verNum/$VERNum/" works/$dockerScript
 	sed -i "s/arch/$ARCH/" works/$dockerScript
+	sed -i "s/tags/$ver/" works/$dockerScript
 	cp -a /root/img.tgz works/
 	cd works
 	log "build image $newimg" 
