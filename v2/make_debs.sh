@@ -48,6 +48,7 @@ function clearWork() {
 	docker rm $container
 	log "rmi $image" 
 	docker rmi $image
+	docker rmi $3
 }
 
 function publishdeb() {
@@ -109,7 +110,7 @@ function buildPublishClear() {
 		exit 1
 	fi
 	rm -rf debs
-	clearWork $container $newimg
+	clearWork $container $newimg $origImg
 }
 
 
