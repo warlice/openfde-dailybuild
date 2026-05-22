@@ -44,6 +44,15 @@ function w_log()
 
 w_log "$@"
 aliyun configure switch --profile default 1>/dev/null 2>&1
+
+disk_id=`aliyun ecs DescribeDisks --RegionId us-east-1 --DiskName aosp_source_disk_350G_$mode |jq -r .Disks.Disk[0].DiskId`
+if [[ -z "$disk_id" || "$disk_id" == "null" ]]; then
+	w_log "failed: disk id not found"
+	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "disk id for img making not found" -m "disk id not found" -f 185457686@qq.com
+	#w_log "delete instance $instance_id due to disk id not found"
+	#aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	exit 1
+fi
 w_log "step 1: create ecs instance"
 password=`grep password key.txt |awk -F " " '{print $2}' `
 #instance_id="i-0xi16uf7r4syux4z894e"
@@ -57,6 +66,7 @@ fi
 if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
 	w_log "failed: ecs create failed"
 	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "create ecs for aosp img making failed" -m "create ecs failed" -f 185457686@qq.com
+	aliyun ecs DeleteDisk --DiskId $disk_id  --RegionId us-east-1 >> $LOGPATH
 	exit 1
 fi
 sleep 30  # 等待实例启动
@@ -72,14 +82,7 @@ done
 instanceStatus=`aliyun  ecs DescribeInstances --InstanceIds "[\"$instance_id\"]" --RegionId us-east-1 --InstanceName openfde_aosp_make |jq  .Instances.Instance[0].Status`
 if [ "$instanceStatus" != '"Running"' ];then
 	w_log "step 2: after 180s ecs is  still not running"
-	exit 1
-fi
-disk_id=`aliyun ecs DescribeDisks --RegionId us-east-1 --DiskName aosp_source_disk_350G_$mode |jq -r .Disks.Disk[0].DiskId`
-if [[ -z "$disk_id" || "$disk_id" == "null" ]]; then
-	w_log "failed: disk id not found"
-	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "disk id for img making not found" -m "disk id not found" -f 185457686@qq.com
-	w_log "delete instance $instance_id due to disk id not found"
-	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	aliyun ecs DeleteDisk --DiskId $disk_id  --RegionId us-east-1 >> $LOGPATH
 	exit 1
 fi
 aliyun ecs AttachDisk --InstanceId $instance_id --DiskId  $disk_id
@@ -102,6 +105,7 @@ invoke_id=`aliyun ecs RunCommand  --Name "transfer_id" --Type "RunShellScript" -
 if [[ -z "$invoke_id" || "$invoke_id" == "null" ]]; then
 	w_log "invoke id not found or exec command failed, exit"
 	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	aliyun ecs DeleteDisk --DiskId $disk_id  --RegionId us-east-1 >> $LOGPATH
 	exit 1
 fi
 
@@ -121,6 +125,7 @@ for i in {1..10}; do
 		w_log "transfer file failed "
 		w_log "to delete instance $instance_id"
 		aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+		aliyun ecs DeleteDisk --DiskId $disk_id  --RegionId us-east-1 >> $LOGPATH
 		exit 1
 	fi
 	sleep 10
@@ -131,6 +136,7 @@ if [ -z "$ip" ];then
 	w_log "ip not founded"
 	w_log "to delete instance $instance_id"
 	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	aliyun ecs DeleteDisk --DiskId $disk_id  --RegionId us-east-1 >> $LOGPATH
 	exit 1
 fi
 ssh-keygen -R $ip
@@ -151,6 +157,7 @@ if [ $? != 0 ];then
 	w_log "exec remote cmd through ssh failed"
 	w_log "to delete instance $instance_id"
 	aliyun ecs DeleteInstance --InstanceId $instance_id --Force true --RegionId us-east-1
+	aliyun ecs DeleteDisk --DiskId $disk_id  --RegionId us-east-1 >> $LOGPATH
 	exit 1
 fi
 w_log "step end: run command success"
