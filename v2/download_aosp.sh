@@ -32,18 +32,23 @@ function call_next_start_img_make() {
 	done
 }
 
+branch="fde_14"
 if [ "$1" = "version" ];then
 	ver=$2
 	aospver=$3
 	arch=$4
 	num=$5
 	disk_id=$6
+	branch=$ver
 else
 	disk_id=$2
 	ver=`date "+%y%m%d%H"`
 	aospver=14
 	arch=arm64
 	num=1
+fi
+if [ "$aospver" = "17" ];then
+	branch="fde_17"
 fi
 log "step 1: stop_unattended-upgrades" 
 systemctl stop unattended-upgrades
@@ -63,10 +68,10 @@ mkfs.ext4 /dev/vdb
 mount /dev/vdb /root/aosp
 cd aosp
 log "step 4: repo init " 
-repo init -u https://github.com/openfde/fde-manifests -b fde_14 --depth=1
+repo init -u https://github.com/openfde/fde-manifests -b "$branch" --depth=1
 cp /root/aosp/.repo/repo/repo /usr/bin/repo
-log "step 5: repo init --git-lfs "
-repo init -u https://github.com/openfde/fde-manifests -b fde_14 --depth=1  --git-lfs
+log "step 5: repo init --git-lfs $branch"
+repo init -u https://github.com/openfde/fde-manifests -b "$branch" --depth=1  --git-lfs
 set +e
 log  "step 6: repo sync 10 first " 
 repo sync -j 10
