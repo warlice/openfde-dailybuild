@@ -43,10 +43,30 @@ set -e
 if [ ! -e "/root/aosp" ];then
 	log "step 2: install dependens " 
 	apt update
-	NEEDRESTART_SUSPEND=1 apt install  -y vim git libssl-dev gcc-arm-linux-gnueabi build-essential libncurses5-dev bzip2 make gcc g++ grep bc curl bison flex openssl lzop ccache unzip zlib1g-dev file ca-certificates wget cmake texinfo xz-utils libelf-dev zip libgmp-dev libncurses-dev g++ gawk m4 cpio binutils-dev ninja-build u-boot-tools zstd clang libbz2-1.0 libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb5.3 libpcap-dev libexpat1-dev liblzma-dev libffi-dev libc6-dev automake libtool libc++-dev libc++abi-dev libgtest-dev golang-go libgles2-mesa-dev libpulse-dev libxml2-dev llvm llvm-dev python3 lld crossbuild-essential-arm64 meson glslang-tools python3-mako curl repo wget git-lfs jq python3-pycparser
+	NEEDRESTART_SUSPEND=1 apt install  -y vim git libssl-dev gcc-arm-linux-gnueabi build-essential libncurses5-dev bzip2 make gcc g++ grep bc curl bison flex openssl lzop ccache unzip zlib1g-dev file ca-certificates wget cmake texinfo xz-utils libelf-dev zip libgmp-dev libncurses-dev g++ gawk m4 cpio binutils-dev ninja-build u-boot-tools zstd clang libbz2-1.0 libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb5.3 libpcap-dev libexpat1-dev liblzma-dev libffi-dev libc6-dev automake libtool libc++-dev libc++abi-dev libgtest-dev golang-go libgles2-mesa-dev libpulse-dev libxml2-dev llvm llvm-dev python3 lld crossbuild-essential-arm64 meson glslang-tools python3-mako curl repo wget git-lfs jq python3-pycparser libconfig-dev libxml2-dev libarchive-dev
 	ln -sf /usr/bin/python3 /usr/bin/python
+	pip3 install --upgrade meson
 	log "step 3: git set user name " 
 	git config --global user.name openfde && git config --global user.email openfde@openfde.com
+	git clone https://github.com/KhronosGroup/glslang.git
+     	cd glslang/
+   	mkdir build && cd build
+	log "step 3 compile glslang"
+   	cmake .. -DENABLE_HLSL=OFF -DENABLE_OPT=OFF
+   	make -j$(nproc)
+	ldconfig
+	cd ~
+	cp -a /usr/local/bin/glslang /usr/bin/
+	cp -a /usr/local/bin/glslangValidator /usr/bin/
+	log "step 3 compile libarchive"
+	wget https://www.libarchive.org/downloads/libarchive-3.7.4.tar.gz
+	tar -xzf libarchive-3.7.4.tar.gz
+	cd libarchive-3.7.4
+	./configure --prefix=/usr
+	make
+	make install
+	cd ~
+
 fi
 
 if [ "$1" = "version" ];then
