@@ -53,7 +53,9 @@ if [ ! -e "/root/aosp" ];then
    	mkdir build && cd build
 	log "step 3 compile glslang"
    	cmake .. -DENABLE_HLSL=OFF -DENABLE_OPT=OFF
+	log "step 3 make glslang"
    	make -j$(nproc)
+	make install
 	ldconfig
 	cd ~
 	cp -a /usr/local/bin/glslang /usr/bin/

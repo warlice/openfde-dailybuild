@@ -39,7 +39,7 @@ if [ "$1" = "version" ];then
 	arch=$4
 	num=$5
 	disk_id=$6
-	branch=$ver
+	branch=$aospver
 else
 	disk_id=$2
 	ver=`date "+%y%m%d%H"`
@@ -67,7 +67,7 @@ log "step 3 mkfs vdb and mount"
 mkfs.ext4 /dev/vdb
 mount /dev/vdb /root/aosp
 cd aosp
-log "step 4: repo init " 
+log "step 4: repo init $branch" 
 repo init -u https://github.com/openfde/fde-manifests -b "$branch" --depth=1
 cp /root/aosp/.repo/repo/repo /usr/bin/repo
 log "step 5: repo init --git-lfs $branch"
