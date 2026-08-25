@@ -39,7 +39,7 @@ if [ "$1" = "version" ];then
 	arch=$4
 	num=$5
 	disk_id=$6
-	branch=$aospver
+	branch=fde_$aospver
 else
 	disk_id=$2
 	ver=`date "+%y%m%d%H"`
