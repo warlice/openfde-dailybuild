@@ -87,6 +87,8 @@ if [ $? != 0 ];then
 fi
 log " umount vdb"
 umount /root/aosp
+instance_id=`curl -s http://100.100.100.200/latest/meta-data/instance-id`
+aliyun ecs DetachDisk --InstanceId $instance_id --DiskId $disk_id
 log "call manager to exec task aosp img making"
 set +e
 log "call start_img_make_task $1 $ver $aospver $arch $num $disk_id"
