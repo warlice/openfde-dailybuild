@@ -48,6 +48,7 @@ function clearWork() {
 	docker rm $container
 	log "rmi $image" 
 	docker rmi $image
+	docker rmi $3
 }
 
 function publishdeb() {
@@ -86,6 +87,7 @@ function buildPublishClear() {
 	sed -i "/aospver/s/aospver/$basever/" works/$dockerScript
 	sed -i "s/verNum/$VERNum/" works/$dockerScript
 	sed -i "s/arch/$ARCH/" works/$dockerScript
+	sed -i "s/tags/$ver/" works/$dockerScript
 	cp -a /root/img.tgz works/
 	cd works
 	log "build image $newimg" 
@@ -108,7 +110,7 @@ function buildPublishClear() {
 		exit 1
 	fi
 	rm -rf debs
-	clearWork $container $newimg
+	clearWork $container $newimg $origImg
 }
 
 

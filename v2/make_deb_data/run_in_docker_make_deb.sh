@@ -2,7 +2,7 @@
 
 git clone https://gitee.com/openfde/quick_start_to_compile_linux_programs
 cd quick_start_to_compile_linux_programs
-./build_linux_for_fde.sh
+./build_linux_for_fde.sh tags
 
 cd /root/
 tar -xf img.tgz -C /

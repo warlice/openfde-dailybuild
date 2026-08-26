@@ -16,7 +16,10 @@ if [ -z "$2" ];then
 	log "Error: id is empty"
 	exit 1
 fi
-sleep 10
+#delete disk as soon as possible
+if [ "$1" != "disk" ];then
+	sleep 10
+fi
 if [ "$1" = "deb" ];then
 	aliyun configure switch --profile hangzhou >> $LOGPATH
 	id=`aliyun ecs DescribeInstances --InstanceIds "[\"$2\"]" --InstanceName openfde_deb_make |jq -r .Instances.Instance[0].InstanceId`
