@@ -14,7 +14,7 @@ function trans_log_to_manager()
 function delete_my_self() 
 {
 	aliyun ecs RunCommand  --RegionId cn-beijing --Name "delete_my_self_aosp" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
-	  --CommandContent "bash /root/delete_instance.sh deb $1" 
+	  --CommandContent "bash /root/v2/delete_instance.sh deb $1" 
 	return $?
 }
 

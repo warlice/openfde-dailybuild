@@ -122,7 +122,7 @@ touch /root/oss.log
 USEndpoint="oss-us-east-1.aliyuncs.com"
 aliyun ossutil stat -e $USEndpoint $osspath
 if [ $? != 0 ];then
-	log "step 3 daily-images/img.tgz is not exist"
+	log "step 3 $osspath is not exist"
 	exit 1
 fi
 aliyun ossutil cp -e $USEndpoint $osspath . > /root/oss.log 2>&1
