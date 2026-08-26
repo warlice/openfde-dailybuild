@@ -70,7 +70,7 @@ if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
 	exit 1
 fi
 sleep 30  # 等待实例启动
-w_log "step 2: wait until ecs is running"
+w_log "step 2: wait until ecs $instance_id is running"
 for i in {1..10}; do
 	sleep 15  # 等待实例启动
 	instanceStatus=`aliyun  ecs DescribeInstances --InstanceIds "[\"$instance_id\"]" --RegionId us-east-1 --InstanceName openfde_aosp_make |jq  .Instances.Instance[0].Status`
