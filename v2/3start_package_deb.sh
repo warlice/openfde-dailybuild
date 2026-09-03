@@ -32,6 +32,11 @@ if [ "$1" = "version" ];then
 		usage
 		exit 1
 	fi
+	if [ -z "$6" ];then
+		echo "please input the image source like zh us"
+		usage
+		exit 1
+	fi
 fi
 
 mkdir -p /root/logs
@@ -129,12 +134,12 @@ if [ "$mode" = "daily" ];then
 		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh daily 1>/dev/null 2>&1 &"
 	fi
 else 
-	w_log "step 5 wrapper_deb_mk.sh version $2 $3 $4 $5"
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5  1>/dev/null 2>&1 & "
+	w_log "step 5 wrapper_deb_mk.sh version $2 $3 $4 $5 $6"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5 $6 1>/dev/null 2>&1 & "
 	if [ $? != 0 ];then
 		sleep 15
 		w_log "tray ssh exec again version"
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5  1>/dev/null 2>&1 & "
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5 $6  1>/dev/null 2>&1 & "
 	fi
 fi
 

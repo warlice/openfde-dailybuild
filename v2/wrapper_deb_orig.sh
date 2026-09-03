@@ -44,7 +44,7 @@ echo "call make_debs.sh"
 if [ "$1" = "daily" ];then
 	bash make_debs.sh $1 1>/dev/null 2>&1 & 
 else
-	bash make_debs.sh $1 $2 $3 $4 $5 1>/dev/null 2>&1 &
+	bash make_debs.sh $1 $2 $3 $4 $5 $6 1>/dev/null 2>&1 &
 fi
 make_pid=$!
 wait $make_pid
