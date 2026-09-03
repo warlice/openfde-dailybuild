@@ -14,7 +14,7 @@ function trans_log_to_manager()
 function delete_my_self() 
 {
 	aliyun ecs RunCommand  --RegionId cn-beijing --Name "delete_my_self_aosp" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
-	  --CommandContent "bash /root/delete_instance.sh deb $1" 
+	  --CommandContent "bash /root/v2/delete_instance.sh deb $1" 
 	return $?
 }
 
@@ -44,7 +44,7 @@ echo "call make_debs.sh"
 if [ "$1" = "daily" ];then
 	bash make_debs.sh $1 1>/dev/null 2>&1 & 
 else
-	bash make_debs.sh $1 $2 $3 $4 $5 1>/dev/null 2>&1 &
+	bash make_debs.sh $1 $2 $3 $4 $5 $6 1>/dev/null 2>&1 &
 fi
 make_pid=$!
 wait $make_pid

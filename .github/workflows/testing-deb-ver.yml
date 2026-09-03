@@ -38,6 +38,16 @@ on:
         default: '1'
         type: string
 
+      img_source:
+        description: 'what the source of the images'
+        required: false
+        default: us
+        type: choice
+        options:
+        - us
+        - zh
+
+
 jobs:
   start_deb_build:
     runs-on: ubuntu-latest
@@ -63,7 +73,8 @@ jobs:
           --InstanceId.1 ${{ vars.ALIYUN_MANAGER_ECS_INSTANCE_ID }} \
           --CommandContent "nohup bash /root/v2/call_start_deb_task.sh  version \
           ${{ github.event.inputs.version }} ${{ github.event.inputs.aosp_base_ver }} \
-          ${{ github.event.inputs.arch }} ${{ github.event.inputs.num }} 1>/dev/null 2>&1 " |jq -r '.InvokeId')
+          ${{ github.event.inputs.arch }} ${{ github.event.inputs.num }} \
+          ${{ github.event.inputs.img_source }} 1>/dev/null 2>&1 " |jq -r '.InvokeId')
 
           echo "invoke_id=$invoke_id" >> $GITHUB_OUTPUT
 

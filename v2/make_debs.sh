@@ -23,6 +23,7 @@ if  [ "$1" = "daily" ];then
 	ARCH="arm64"
 	VERNum="1"
 	ImgPre=daily-images
+	ImgSrc="us"
 else
 	mode="testing"
 	ver=$2
@@ -30,6 +31,7 @@ else
 	ARCH=$4
 	VERNum=$5
 	ImgPre=openfde-images
+	ImgSrc=$6
 fi
 
 if [ "$ARCH" = "arm64" ];then
@@ -37,7 +39,6 @@ if [ "$ARCH" = "arm64" ];then
 else
 	AN_IMG=img64only.tgz
 fi
-osspath="oss://fde-ci/$ImgPre/$AN_IMG"
 
 function clearWork() {
 	container=$1
@@ -116,16 +117,22 @@ function buildPublishClear() {
 
 #pull img.tgz from oss first
 log "step 3: copy img.tgz from oss/fde-ci" 
-aliyun configure switch --profile us
+if [ "$ImgSrc" = "us" ];then
+	aliyun configure switch --profile us
+	Endpoint="oss-us-east-1.aliyuncs.com"
+	osspath="oss://fde-ci/$ImgPre/$AN_IMG"
+else
+	Endpoint="oss-cn-hangzhou.aliyuncs.com"
+	osspath="oss://openfde/$ImgPre/$AN_IMG"
+fi
 set +e
 touch /root/oss.log
-USEndpoint="oss-us-east-1.aliyuncs.com"
-aliyun ossutil stat -e $USEndpoint $osspath
+aliyun ossutil stat -e $Endpoint $osspath
 if [ $? != 0 ];then
-	log "step 3 daily-images/img.tgz is not exist"
+	log "step 3 $osspath is not exist"
 	exit 1
 fi
-aliyun ossutil cp -e $USEndpoint $osspath . > /root/oss.log 2>&1
+aliyun ossutil cp -e $Endpoint $osspath . > /root/oss.log 2>&1
 if [ $? != 0 ];then
 	log "step 3 copy $osspath failed"
 	exit 1
