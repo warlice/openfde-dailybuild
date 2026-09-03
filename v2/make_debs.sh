@@ -118,13 +118,15 @@ function buildPublishClear() {
 #pull img.tgz from oss first
 log "step 3: copy img.tgz from oss/fde-ci" 
 if [ "$ImgSrc" = "us" ];then
-	aliyun configure switch --profile us
+	profile="us"
 	Endpoint="oss-us-east-1.aliyuncs.com"
 	osspath="oss://fde-ci/$ImgPre/$AN_IMG"
 else
+	profile="default"
 	Endpoint="oss-cn-hangzhou.aliyuncs.com"
 	osspath="oss://openfde/$ImgPre/$AN_IMG"
 fi
+aliyun configure switch --profile $profile
 set +e
 touch /root/oss.log
 aliyun ossutil stat -e $Endpoint $osspath
