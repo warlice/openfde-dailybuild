@@ -57,7 +57,7 @@ w_log "step 1: create ecs instance"
 password=`grep password key.txt |awk -F " " '{print $2}' `
 #instance_id="i-0xi16uf7r4syux4z894e"
 if [ -z "$instance_id" ];then
-	instance_id=`aliyun ecs RunInstances --SpotStrategy SpotAsPriceGo --RegionId us-east-1 --InstanceType ecs.c9i.8xlarge --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd \
+	instance_id=`aliyun ecs RunInstances --SpotStrategy SpotAsPriceGo --RegionId us-east-1 --InstanceType ecs.c9ae.8xlarge --ImageId ubuntu_22_04_x64_20G_alibase_20230907.vhd \
 	--SecurityGroupId sg-0xi22iuffog8ylfh0or5  --VSwitchId vsw-0xi3vuydn6xui661xeiwu  --SystemDisk.Category cloud_essd --SystemDisk.PerformanceLevel PL1 \
        	--Password $password \
 	--InternetChargeType PayByTraffic --InternetMaxBandwidthOut 100 --Amount 1 --InstanceName openfde_aosp_make |jq -r .InstanceIdSets.InstanceIdSet[0] `

@@ -62,9 +62,9 @@ if [ $ret != 0 ];then
 fi
 now=`date "+%y%m%d_%H%M%S"`
 if [ "$1" = "daily" ];then
-	logpath=/root/logs/aospdown/${now}_daily_download.log
+	logpath=/root/logs/download/${now}_daily_download.log
 else
-	logpath=/root/logs/aospdown/${now}_version_download.log
+	logpath=/root/logs/download/${now}_version_download.log
 fi
 
 instance_id=`curl -s http://100.100.100.200/latest/meta-data/instance-id`

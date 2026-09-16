@@ -51,10 +51,10 @@ wait $make_pid
 now=`date "+%y%m%d_%H%M%S"`
 if [ "$1" = "daily" ];then
 	mode=daily
-	logpath=/root/logs/aospmk/${now}_daily_make_imgs.log
+	logpath=/root/logs/image/${now}_daily_make_imgs.log
 else
 	mode=version
-	logpath=/root/logs/aospmk/${now}_version_make_imgs.log
+	logpath=/root/logs/image/${now}_version_make_imgs.log
 fi
 echo "delete disk id $disk_id" >> /root/make_imgs.log 
 instance_id=`curl -s http://100.100.100.200/latest/meta-data/instance-id`
