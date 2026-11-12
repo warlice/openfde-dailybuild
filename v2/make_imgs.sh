@@ -11,7 +11,7 @@ function log(){
 
 function call_next_start_deb_make() {
 	invoke_id=`aliyun ecs RunCommand --RegionId cn-beijing  --Name "call_next_deb_make_task" --Type "RunShellScript" --InstanceId.1 i-2zedqszo15pm336f5kpk \
-	  --CommandContent "nohup bash /root/v2/call_start_deb_task.sh $1 $2 $3 $4 $5 1>/dev/null 2>&1"  | jq -r '.InvokeId'` 
+	  --CommandContent "nohup bash /root/v2/call_start_deb_task.sh $1 $2 $3 $4 $5 "us" 1>/dev/null 2>&1"  | jq -r '.InvokeId'` 
 	if [ $? != 0 ];then
 		return 1
 	fi

@@ -60,7 +60,8 @@ if [ -z "$instance_id" ];then
 
 if [[ -z "$instance_id" || "$instance_id" == "null" ]]; then
 	w_log "failed: ecs create failed"
-	sendEmail -xu 185457686@qq.com -xp guqbtpjnufzycbcb  -t 185457686@qq.com -s smtp.qq.com:587 -u "create ecs for aosp img downloader failed" -m "create ecs failed" -f 185457686@qq.com
+	emailkey=`grep email /root/key.txt |awk -F " " '{print $2}' `
+	sendEmail -xu 185457686@qq.com -xp "$emailkey"  -t 185457686@qq.com -s smtp.qq.com:587 -u "create ecs for aosp img downloader failed" -m "create ecs failed" -f 185457686@qq.com
 	exit 1
 fi
 sleep 30  # 等待实例启动

@@ -6,38 +6,7 @@
 #3=aospver 14
 #4=arch arm64|arm64only|x86
 #5=num 1, 2...
-
-mode=daily
-LOGPATH=/root/logs/start_deb_make_daily.log
-if [ "$1" = "version" ];then
-	LOGPATH=/root/logs/start_deb_make_version.log
-	mode=version
-	if [ -z "$2" ];then
-		echo "please input the version like 2.0.6"
-		usage
-		exit 1
-	fi
-	if [ -z "$3" ];then
-		echo "please input the asopver like 14"
-		usage
-		exit 1
-	fi
-	if [ -z "$4" ];then
-		echo "please input the arch like arm64|arm64only|x86"
-		usage
-		exit 1
-	fi
-	if [ -z "$5" ];then
-		echo "please input the num like 1  or 2 or 3 or ..."
-		usage
-		exit 1
-	fi
-	if [ -z "$6" ];then
-		echo "please input the image source like zh us"
-		usage
-		exit 1
-	fi
-fi
+#6=image source zh|us
 
 mkdir -p /root/logs
 touch $LOGPATH 
@@ -46,6 +15,34 @@ function w_log()
 	s=`date "+%y%m%d_%H%M%S"`
 	echo  "$s: $@" |tee -a $LOGPATH
 }
+
+mode=daily
+img_source="us"
+LOGPATH=/root/logs/start_deb_make_daily.log
+if [ "$1" = "version" ];then
+	LOGPATH=/root/logs/start_deb_make_version.log
+	mode=version
+	if [ -z "$2" ];then
+		w_log "please input the version like 2.0.6"
+		exit 1
+	fi
+	if [ -z "$3" ];then
+		w_log "please input the asopver like 14"
+		exit 1
+	fi
+	if [ -z "$4" ];then
+		w_log "please input the arch like arm64|arm64only|x86"
+		exit 1
+	fi
+	if [ -z "$5" ];then
+		w_log "please input the num like 1  or 2 or 3 or ..."
+		exit 1
+	fi
+	if [ -n "$6" ];then
+		img_source=$6
+	fi
+fi
+
 
 w_log $@
 aliyun configure switch --profile hangzhou 1>/dev/null 2>&1
@@ -134,12 +131,12 @@ if [ "$mode" = "daily" ];then
 		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh daily 1>/dev/null 2>&1 &"
 	fi
 else 
-	w_log "step 5 wrapper_deb_mk.sh version $2 $3 $4 $5 $6"
-	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5 $6 1>/dev/null 2>&1 & "
+	w_log "step 5 wrapper_deb_mk.sh version $2 $3 $4 $5 $img_source"
+	ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5 $img_source 1>/dev/null 2>&1 & "
 	if [ $? != 0 ];then
 		sleep 15
 		w_log "tray ssh exec again version"
-		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5 $6  1>/dev/null 2>&1 & "
+		ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null root@$ip  "setsid bash /root/wrapper_deb.sh  version $2 $3 $4 $5 $img_source  1>/dev/null 2>&1 & "
 	fi
 fi
 
