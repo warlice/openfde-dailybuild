@@ -35,7 +35,7 @@ on:
 
 jobs:
   start_deb_build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Configure Aliyun CLI
         run: |
